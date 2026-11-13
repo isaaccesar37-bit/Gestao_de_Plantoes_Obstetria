@@ -24,7 +24,7 @@ button{cursor:pointer}
 .app.sidebar-collapsed{grid-template-columns:76px 1fr}
 .app.sidebar-collapsed .sidebar{padding:20px 10px;gap:20px}
 .app.sidebar-collapsed .brand{flex-direction:column;gap:10px;padding:0;justify-content:center}
-.app.sidebar-collapsed .brand-text,.app.sidebar-collapsed .nav-label,.app.sidebar-collapsed .nav button .label,.app.sidebar-collapsed .side-note,.app.sidebar-collapsed .side-link-box{display:none!important}
+.app.sidebar-collapsed .brand-text,.app.sidebar-collapsed .nav-label,.app.sidebar-collapsed .nav button .label,.app.sidebar-collapsed .side-note,.app.sidebar-collapsed .sidebar .side-link-box{display:none!important}
 .app.sidebar-collapsed .sidebar-toggle-btn{margin-left:0}
 .app.sidebar-collapsed .toggle-icon{transform:rotate(180deg)}
 .app.sidebar-collapsed .nav button{justify-content:center;padding:12px 6px}
@@ -35,6 +35,7 @@ button{cursor:pointer}
 .nav button.active,.nav button:hover{background:#ffffff17;color:#fff}
 .nav .icon{font-size:17px;width:20px;text-align:center}
 .side-link-box{margin-top:auto;border:1px solid #ffffff20;padding:14px;border-radius:13px;color:#c0d2d6;font-size:12px;display:flex;flex-direction:column;gap:8px}
+.form-access-box{margin:22px 0 0;background:var(--navy);border-color:#ffffff20;max-width:520px;box-shadow:var(--shadow)}
 .side-link-title{color:white;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.8px}
 .side-link-input-wrap input{width:100%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);border-radius:7px;padding:7px 9px;color:#fff;font-size:12px;outline:none}
 .side-link-btn{display:flex;align-items:center;justify-content:space-between;background:#35b5a5;color:#fff;text-decoration:none;padding:8px 10px;border-radius:7px;font-weight:600;font-size:12px;transition:all .2s;border:0;cursor:pointer;width:100%}
@@ -129,10 +130,13 @@ td strong{font-size:13px}
 .event strong{display:block;font-size:10px;color:#166e66}
 .event span{color:#52706f}
 .event.overlap{background:#fff3dc;border-color:#e1a947}
+.event.available-slot{background:#f1f6fb;border-color:#6f9bc3}
+.event.available-slot .schedule-names{color:#315d83}
 .event.more{background:#f1f3f4;border:0;color:#61747c}
 .calendar-legend{display:flex;gap:16px;padding:13px 18px;color:var(--muted);font-size:11px;border-top:1px solid var(--line)}
 .legend-chip{width:9px;height:9px;border-radius:3px;background:#42a89b;display:inline-block;margin-right:5px}
 .legend-chip.gold{background:#e1a947}
+.legend-chip.available{background:#6f9bc3}
 .hint{font-size:12px;color:var(--muted);padding:12px 18px;background:#fbfcfc;border-top:1px solid var(--line)}
 .overlay{position:fixed;inset:0;background:#10263180;display:grid;place-items:center;padding:20px;z-index:50}
 .modal{background:white;border-radius:16px;width:min(520px,100%);box-shadow:0 24px 80px #0a202a55}
@@ -239,23 +243,25 @@ td strong{font-size:13px}
 @media(max-width:580px){.monthly-tools{grid-template-columns:1fr}.monthly-create{grid-column:auto}}
 @media(max-width:700px){.data-transfer-grid{grid-template-columns:1fr}}
 @media(max-width:580px){
-  .app,.app.sidebar-collapsed{display:block;min-height:100vh;grid-template-columns:1fr}
+  .app,.app.sidebar-collapsed{display:flex;flex-direction:column;min-height:100vh;grid-template-columns:1fr}
   .sidebar,.app.sidebar-collapsed .sidebar{position:sticky;top:0;z-index:20;padding:6px 8px;gap:0;overflow:hidden;box-shadow:0 3px 12px #10263118}
+  .sidebar{order:1}
   .sidebar .brand{display:none}
   .sidebar>div:not(.brand){min-width:0}
   .nav-label{display:none!important}
-  .nav{display:flex;gap:7px;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-width:thin;scroll-snap-type:x proximity;padding:1px 2px 5px}
+  .nav{display:flex;width:100%;justify-content:safe center;gap:7px;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-width:thin;scroll-snap-type:x proximity;padding:1px 2px 5px}
   .nav button,.app.sidebar-collapsed .nav button{flex:0 0 44px;min-height:42px;justify-content:center;padding:8px;gap:0;font-size:12px;white-space:nowrap;scroll-snap-align:start}
   .nav button .label,.app.sidebar-collapsed .nav button .label{display:none!important}
   .nav .icon{font-size:20px;width:auto}
-  .side-link-box,.app.sidebar-collapsed .side-link-box{display:none!important}
-  .main{width:100%;min-width:0}
-  .topbar{height:auto;min-height:56px;padding:10px 14px;gap:8px}
-  .crumb{font-size:11px;max-width:48%;line-height:1.3}
-  .topbar-right{gap:6px}
+  .sidebar .side-link-box,.app.sidebar-collapsed .sidebar .side-link-box{display:none!important}
+  .main{display:contents;width:100%;min-width:0}
+  .topbar{order:0;display:flex;flex-wrap:wrap;justify-content:center;height:auto;min-height:56px;padding:9px 12px;gap:6px}
+  .crumb{width:100%;font-size:11px;max-width:100%;line-height:1.3;text-align:center}
+  .topbar-right{width:100%;justify-content:center;gap:7px}
   #save-status{font-size:10px!important;padding:4px 7px!important;white-space:nowrap}
-  .avatar{display:none}
-  .content{padding:20px 12px}
+  .today{display:inline;font-size:10px}
+  .avatar{display:grid;width:28px;height:28px;font-size:12px}
+  .content{order:2;padding:20px 12px}
   .page-head{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:18px}
   .page-head h1{font-size:22px;line-height:1.2}
   .page-head p{font-size:13px}
@@ -274,6 +280,7 @@ td strong{font-size:13px}
   .matrix-tools select{width:100%}
   .calendar-toolbar{gap:8px;flex-wrap:wrap}
   .calendar-toolbar>.button{margin-left:auto}
+  .calendar-tabs{overflow-x:auto;overscroll-behavior-x:contain}
   .month-control{gap:7px}
   .month-control h2{min-width:112px;font-size:13px}
   .calendar{grid-template-columns:repeat(7,minmax(42px,1fr));overflow-x:auto}
@@ -323,9 +330,6 @@ td strong{font-size:13px}
         <button data-page="dados" title="Importar e Exportar Dados" aria-label="Importar e Exportar Dados"><span class="icon" aria-hidden="true">⇅</span><span class="label">Importar e Exportar Dados</span></button>
       </nav>
     </div>
-    <div class="side-link-box" id="sidebar-link-box">
-      <!-- Renderizado dinamicamente com controle de acesso por senha de administrador -->
-    </div>
   </aside>
   <main class="main">
     <header class="topbar">
@@ -352,6 +356,7 @@ td strong{font-size:13px}
   let db=load(),
       page='manual',
       month=new Date(new Date().getFullYear(),new Date().getMonth(),1),
+      calendarMode='escalados',
       matrixFilter='all',
       availTab='todos',
       plantaoMonth=new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0'),
@@ -653,7 +658,7 @@ td strong{font-size:13px}
   });
 
   function renderCalendar(){
-    $('#view').innerHTML=header('Calendário de plantões','Visualize a escala mensal por dia, com escalados, substitutos e hospital.',`<div style="display:flex;gap:8px"><button class="button" onclick="app.exportCalendar()">⇩ Exportar escala (CSV)</button><button class="button primary" onclick="app.exportCalendarPdf()">▣ Exportar calendário (PDF)</button></div>`)+stats()+`
+    $('#view').innerHTML=header(calendarMode==='escalados'?'Calendário de plantões':'Disponíveis não escalados',calendarMode==='escalados'?'Visualize os profissionais escalados por dia, com horário e hospital.':'Visualize, por plantão, quem marcou disponibilidade e ainda não foi escalado.',`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="button" onclick="app.exportCalendar()">⇩ Exportar escala (CSV)</button><button class="button primary" onclick="app.exportCalendarPdf()">▣ Exportar calendário (PDF)</button></div>`)+stats()+`
     <div class="card">
       <div class="calendar-toolbar">
         <div class="month-control">
@@ -663,12 +668,16 @@ td strong{font-size:13px}
         </div>
         <button class="button" onclick="app.goToday()">Hoje</button>
       </div>
+      <div class="tabs calendar-tabs" role="tablist" aria-label="Visualização do calendário">
+        <button class="tab ${calendarMode==='escalados'?'active':''}" role="tab" aria-selected="${calendarMode==='escalados'}" onclick="app.setCalendarMode('escalados')">Escalados</button>
+        <button class="tab ${calendarMode==='disponiveis'?'active':''}" role="tab" aria-selected="${calendarMode==='disponiveis'}" onclick="app.setCalendarMode('disponiveis')">Disponíveis não escalados</button>
+      </div>
       <div class="calendar">
         ${['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map(x=>`<div class="weekday">${x}</div>`).join('')}
         ${calendarCells()}
       </div>
       <div class="calendar-legend">
-        <span><i class="legend-chip"></i> Escalados</span>
+        <span><i class="legend-chip ${calendarMode==='disponiveis'?'available':''}"></i> ${calendarMode==='disponiveis'?'Disponíveis não escalados':'Escalados'}</span>
         <span><i class="legend-chip gold"></i> Horários coincidentes</span>
       </div>
     </div>
@@ -690,7 +699,8 @@ td strong{font-size:13px}
             <label class="button import-label">⇧ Selecionar cópia JSON<input type="file" accept="application/json,.json" class="hidden" onchange="app.importData(this)"></label>
           </div>
         </section>
-      </div>`;
+      </div>
+      <section class="side-link-box form-access-box" id="sidebar-link-box" aria-label="Acesso Forms Disponibilidade"></section>`;
   }
 
   function calendarCells(){
@@ -702,20 +712,20 @@ td strong{font-size:13px}
       let d=new Date(start);
       d.setDate(start.getDate()+i);
       let ds=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`,
-          shifts=db.shifts.filter(s=>{
-            if(s.date!==ds) return false;
+          shifts=db.shifts.filter(s=>s.date===ds).map(s=>{
             let r=db.rosters?.[s.id]||{},
-                ids=r.assigned?.length?r.assigned:db.nurses.filter(n=>db.availability[`${n.id}:${s.id}`]==='yes').slice(0,s.vacancies||2).map(n=>n.id);
-            return ids.some(x=>db.nurses.find(n=>n.id===x)?.name);
-          }).sort((a,b)=>String(a.start||'').localeCompare(String(b.start||''))),
+                available=db.nurses.filter(n=>db.availability[`${n.id}:${s.id}`]==='yes'),
+                assigned=r.assigned?.length?r.assigned:available.slice(0,s.vacancies||2).map(n=>n.id),
+                ids=calendarMode==='disponiveis'?available.filter(n=>!assigned.includes(n.id)).map(n=>n.id):assigned,
+                names=ids.map(x=>db.nurses.find(n=>n.id===x)?.name).filter(Boolean);
+            return{shift:s,names};
+          }).filter(x=>x.names.length).sort((a,b)=>String(a.shift.start||'').localeCompare(String(b.shift.start||''))),
           outside=d.getMonth()!==month.getMonth();
       out+=`<div class="day ${outside?'outside':''}">
         <div class="daynum">${d.getDate()}</div>
-        ${shifts.slice(0,3).map(s=>{
-          let r=db.rosters?.[s.id]||{},
-              ids=r.assigned?.length?r.assigned:db.nurses.filter(n=>db.availability[`${n.id}:${s.id}`]==='yes').slice(0,s.vacancies||2).map(n=>n.id),
-              names=ids.map(x=>db.nurses.find(n=>n.id===x)?.name).filter(Boolean);
-          return `<div class="event schedule-line" title="${esc(s.name||s.code||'Plantão')}">
+        ${shifts.slice(0,3).map(item=>{
+          let s=item.shift,names=item.names;
+          return `<div class="event schedule-line ${calendarMode==='disponiveis'?'available-slot':''}" title="${calendarMode==='disponiveis'?'Disponível e não escalado':'Escalado'} · ${esc(s.name||s.code||'Plantão')}">
             <span class="schedule-time">${esc(s.start||'—')}</span>
             <span class="schedule-separator">-</span>
             <span class="schedule-names">${esc(names.join(', '))}</span>
@@ -1120,6 +1130,7 @@ td strong{font-size:13px}
 
     availTab(t){ availTab=t; renderAvailability(); },
     matrixFilter(v){ matrixFilter=v; renderAvailability(); },
+    setCalendarMode(mode){ calendarMode=mode==='disponiveis'?'disponiveis':'escalados'; renderCalendar(); },
     shiftMonth(n){ month=new Date(month.getFullYear(),month.getMonth()+n,1); renderCalendar(); },
     goToday(){ month=new Date(new Date().getFullYear(),new Date().getMonth(),1); renderCalendar(); },
     toggleSidebar(){
