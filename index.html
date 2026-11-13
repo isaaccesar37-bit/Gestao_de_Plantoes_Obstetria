@@ -240,14 +240,14 @@ td strong{font-size:13px}
 @media(max-width:700px){.data-transfer-grid{grid-template-columns:1fr}}
 @media(max-width:580px){
   .app,.app.sidebar-collapsed{display:block;min-height:100vh;grid-template-columns:1fr}
-  .sidebar,.app.sidebar-collapsed .sidebar{position:sticky;top:0;z-index:20;padding:8px 10px;gap:0;overflow:hidden;box-shadow:0 3px 12px #10263118}
+  .sidebar,.app.sidebar-collapsed .sidebar{position:sticky;top:0;z-index:20;padding:6px 8px;gap:0;overflow:hidden;box-shadow:0 3px 12px #10263118}
   .sidebar .brand{display:none}
   .sidebar>div:not(.brand){min-width:0}
   .nav-label{display:none!important}
-  .nav{display:flex;gap:5px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;padding:1px 0 4px}
-  .nav button,.app.sidebar-collapsed .nav button{flex:0 0 auto;justify-content:flex-start;padding:9px 11px;gap:7px;font-size:12px;white-space:nowrap}
-  .nav button .label,.app.sidebar-collapsed .nav button .label{display:inline!important}
-  .nav .icon{font-size:15px;width:auto}
+  .nav{display:flex;gap:7px;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-width:thin;scroll-snap-type:x proximity;padding:1px 2px 5px}
+  .nav button,.app.sidebar-collapsed .nav button{flex:0 0 44px;min-height:42px;justify-content:center;padding:8px;gap:0;font-size:12px;white-space:nowrap;scroll-snap-align:start}
+  .nav button .label,.app.sidebar-collapsed .nav button .label{display:none!important}
+  .nav .icon{font-size:20px;width:auto}
   .side-link-box,.app.sidebar-collapsed .side-link-box{display:none!important}
   .main{width:100%;min-width:0}
   .topbar{height:auto;min-height:56px;padding:10px 14px;gap:8px}
@@ -315,12 +315,12 @@ td strong{font-size:13px}
     <div>
       <div class="nav-label">Equipe</div>
       <nav class="nav">
-        <button class="active" data-page="equipe"><span class="icon">♙</span><span class="label">Enfermeiros</span></button>
-        <button data-page="plantao"><span class="icon">◷</span><span class="label">Plantões</span></button>
-        <button data-page="disponibilidade"><span class="icon">☑</span><span class="label">Disponibilidade</span></button>
-        <button data-page="manual"><span class="icon">✎</span><span class="label">Inserir/Importar dados</span></button>
-        <button data-page="calendario"><span class="icon">▦</span><span class="label">Calendário</span></button>
-        <button data-page="dados"><span class="icon">⇅</span><span class="label">Importar e Exportar Dados</span></button>
+        <button class="active" data-page="equipe" title="Enfermeiros" aria-label="Enfermeiros"><span class="icon" aria-hidden="true">♙</span><span class="label">Enfermeiros</span></button>
+        <button data-page="plantao" title="Plantões" aria-label="Plantões"><span class="icon" aria-hidden="true">◷</span><span class="label">Plantões</span></button>
+        <button data-page="disponibilidade" title="Disponibilidade" aria-label="Disponibilidade"><span class="icon" aria-hidden="true">☑</span><span class="label">Disponibilidade</span></button>
+        <button data-page="manual" title="Inserir/Importar dados" aria-label="Inserir/Importar dados"><span class="icon" aria-hidden="true">✎</span><span class="label">Inserir/Importar dados</span></button>
+        <button data-page="calendario" title="Calendário" aria-label="Calendário"><span class="icon" aria-hidden="true">▦</span><span class="label">Calendário</span></button>
+        <button data-page="dados" title="Importar e Exportar Dados" aria-label="Importar e Exportar Dados"><span class="icon" aria-hidden="true">⇅</span><span class="label">Importar e Exportar Dados</span></button>
       </nav>
     </div>
     <div class="side-link-box" id="sidebar-link-box">
