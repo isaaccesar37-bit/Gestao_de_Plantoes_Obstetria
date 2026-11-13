@@ -1,0 +1,1246 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Escala Clara | Gestão de plantões</title>
+<style>
+:root{--ink:#172c3a;--muted:#71818b;--line:#e5eceb;--paper:#f5f8f7;--white:#fff;--teal:#087f78;--teal2:#e5f5f2;--navy:#143543;--gold:#e5a840;--red:#b85454;--shadow:0 12px 35px #183b4610}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.45 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+button,input,select{font:inherit}
+button{cursor:pointer}
+.app{min-height:100vh;display:grid;grid-template-columns:250px 1fr;transition:grid-template-columns .25s ease}
+.sidebar{background:var(--navy);color:#ecf5f4;padding:27px 18px;display:flex;flex-direction:column;gap:32px}
+.brand{display:flex;align-items:center;gap:12px;padding:0 8px}
+.logo{height:52px;width:52px;border-radius:14px;background:#35b5a5;display:grid;place-items:center;color:#fff;font-weight:800;font-size:18px;flex-shrink:0}
+.brand strong{display:block;font-size:16px;letter-spacing:.2px}
+.brand small{color:#a9c1c7;font-size:11px}
+
+.sidebar-toggle-btn{border:0;background:rgba(255,255,255,.1);color:#b6cbd0;width:30px;height:30px;border-radius:8px;display:grid;place-items:center;margin-left:auto;cursor:pointer;flex-shrink:0;transition:all .2s}
+.sidebar-toggle-btn:hover{background:rgba(255,255,255,.2);color:#fff}
+.toggle-icon{display:inline-block;font-size:16px;line-height:1;transition:transform .2s ease}
+
+.app.sidebar-collapsed{grid-template-columns:76px 1fr}
+.app.sidebar-collapsed .sidebar{padding:20px 10px;gap:20px}
+.app.sidebar-collapsed .brand{flex-direction:column;gap:10px;padding:0;justify-content:center}
+.app.sidebar-collapsed .brand-text,.app.sidebar-collapsed .nav-label,.app.sidebar-collapsed .nav button .label,.app.sidebar-collapsed .side-note,.app.sidebar-collapsed .side-link-box{display:none!important}
+.app.sidebar-collapsed .sidebar-toggle-btn{margin-left:0}
+.app.sidebar-collapsed .toggle-icon{transform:rotate(180deg)}
+.app.sidebar-collapsed .nav button{justify-content:center;padding:12px 6px}
+
+.nav-label{font-size:10px;color:#89a4ac;text-transform:uppercase;letter-spacing:1.4px;padding:0 12px;margin-bottom:8px}
+.nav{display:grid;gap:6px}
+.nav button{border:0;color:#b6cbd0;text-align:left;padding:12px;border-radius:10px;background:transparent;display:flex;align-items:center;gap:12px;font-size:14px}
+.nav button.active,.nav button:hover{background:#ffffff17;color:#fff}
+.nav .icon{font-size:17px;width:20px;text-align:center}
+.side-link-box{margin-top:auto;border:1px solid #ffffff20;padding:14px;border-radius:13px;color:#c0d2d6;font-size:12px;display:flex;flex-direction:column;gap:8px}
+.side-link-title{color:white;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.8px}
+.side-link-input-wrap input{width:100%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);border-radius:7px;padding:7px 9px;color:#fff;font-size:12px;outline:none}
+.side-link-btn{display:flex;align-items:center;justify-content:space-between;background:#35b5a5;color:#fff;text-decoration:none;padding:8px 10px;border-radius:7px;font-weight:600;font-size:12px;transition:all .2s;border:0;cursor:pointer;width:100%}
+.side-link-btn:hover{filter:brightness(1.1)}
+.side-link-btn.secondary{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#ecf5f4}
+.side-link-btn.secondary:hover{background:rgba(255,255,255,.22);color:#fff;filter:none}
+.side-link-btn.disabled{opacity:.4;pointer-events:none}
+.side-link-manage-btn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);color:#b6cbd0;padding:7px 10px;border-radius:7px;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;width:100%;transition:all .2s}
+.side-link-manage-btn:hover{background:rgba(255,255,255,.18);color:#fff}
+.main{min-width:0}
+.topbar{height:72px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 34px}
+.crumb{color:var(--muted);font-size:13px}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.today{font-size:12px;color:var(--muted)}
+.avatar{height:34px;width:34px;background:#d8efeb;color:#087f78;border-radius:50%;display:grid;place-items:center;font-weight:700}
+.content{max-width:1400px;padding:32px 36px;margin:auto}
+.page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:24px}
+.page-head h1{font-size:27px;letter-spacing:-.6px;margin:0 0 5px}
+.page-head p{margin:0;color:var(--muted);font-size:14px}
+.button{border:1px solid var(--line);background:white;color:var(--ink);padding:10px 15px;border-radius:9px;font-weight:600;font-size:13px}
+.button.primary{border-color:var(--teal);background:var(--teal);color:#fff}
+.button:hover{filter:brightness(.97)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:0 0 22px}
+.stat{padding:17px 19px;background:#fff;border:1px solid var(--line);border-radius:13px}
+.stat-label{color:var(--muted);font-size:12px}
+.stat-value{font-size:26px;font-weight:700;margin-top:5px;letter-spacing:-.5px}
+.stat-foot{color:var(--muted);font-size:11px;margin-top:2px}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
+.card-head{padding:18px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px}
+.card-head h2{margin:0;font-size:16px}
+.card-head small{color:var(--muted)}
+.table-wrap{overflow:auto}
+table{border-collapse:collapse;width:100%;min-width:600px}
+th{text-align:left;padding:12px 18px;font-size:10px;color:var(--muted);letter-spacing:.9px;text-transform:uppercase;background:#fbfcfc;white-space:nowrap}
+td{padding:14px 18px;border-top:1px solid #edf1f0;font-size:13px;vertical-align:middle}
+td strong{font-size:13px}
+.person{display:flex;gap:10px;align-items:center}
+.initial{width:34px;height:34px;display:grid;place-items:center;border-radius:10px;background:#e8f3f1;color:var(--teal);font-weight:700}
+.muted{color:var(--muted);font-size:12px}
+.tag{padding:4px 8px;border-radius:20px;background:var(--teal2);color:#13766d;font-size:11px;font-weight:650;white-space:nowrap}
+.tag.gray{background:#eff2f3;color:#596b73}
+.actions{display:flex;gap:6px}
+.icon-btn{border:0;background:transparent;color:#60747d;padding:6px;border-radius:7px}
+.icon-btn:hover{background:#f0f5f4}
+.empty{text-align:center;padding:44px 20px;color:var(--muted)}
+.empty b{display:block;color:var(--ink);margin-bottom:4px}
+.tabs{display:flex;gap:5px;border-bottom:1px solid var(--line);padding:0 18px}
+.tab{border:0;border-bottom:2px solid transparent;background:none;padding:12px 13px;color:var(--muted);font-size:13px;font-weight:600}
+.tab.active{color:var(--teal);border-color:var(--teal)}
+.matrix-tools{padding:15px 18px;display:flex;gap:10px;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line)}
+.matrix-tools select,.search{border:1px solid var(--line);border-radius:8px;padding:9px 11px;background:#fff;color:var(--ink);font-size:13px}
+.matrix-legend{display:flex;gap:14px;color:var(--muted);font-size:11px}
+.matrix-legend span{display:flex;align-items:center;gap:5px}
+.dot{width:8px;height:8px;border-radius:50%;background:#5cb7a8}
+.dot.off{background:#cbd3d5}
+.shift-head{min-width:150px}
+.shift-head b{display:block;color:var(--ink);font-size:12px;text-transform:none;letter-spacing:0}
+.shift-head small{font-size:10px;text-transform:none;letter-spacing:0}
+.availability{display:flex;gap:5px}
+.availability button{border:1px solid var(--line);background:white;color:#89969b;border-radius:7px;padding:5px 9px;font-size:11px}
+.availability button.yes.selected{border-color:#98d5c9;background:#e6f6f2;color:#14796e}
+.availability button.no.selected{border-color:#e5c3c3;background:#fcf0f0;color:#a94f4f}
+.roster-summary{display:grid;grid-template-columns:repeat(4,minmax(130px,1fr));gap:10px;padding:15px 18px;background:#fbfcfc;border-bottom:1px solid var(--line)}
+.roster-box{border:1px solid var(--line);border-radius:9px;padding:10px 12px;background:white;min-height:64px}
+.roster-box b{display:block;font-size:11px;color:var(--muted);margin-bottom:5px}
+.roster-box span{font-size:12px}
+.paste-panel{display:grid;grid-template-columns:1fr auto;gap:10px;padding:16px 18px;border-bottom:1px solid var(--line);align-items:end}
+.paste-panel label{display:grid;gap:3px;font-size:13px}
+.paste-panel label span{font-size:11px;color:var(--muted)}
+.paste-panel textarea{grid-column:1/-1;width:100%;resize:vertical;border:1px solid #dce5e3;border-radius:8px;padding:10px;font:12px/1.4 ui-monospace,monospace;color:var(--ink)}
+.manual-table{min-width:760px}
+.manual-table th{background:#326d6b;color:#fff;text-transform:none;letter-spacing:0;font-size:12px}
+.manual-table td{padding:10px 14px}
+.manual-table input,.manual-table select{width:100%;border:1px solid #dce5e3;border-radius:7px;padding:9px;background:#fff;color:var(--ink)}
+.manual-table .manual-shifts-text{min-width:450px}
+.manual-table select[multiple]{min-height:86px}
+.manual-table .muted{display:block;margin-top:4px}
+.calendar-toolbar{padding:16px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}
+.month-control{display:flex;align-items:center;gap:12px}
+.month-control h2{min-width:170px;text-align:center;margin:0;font-size:17px}
+.month-control button{border:1px solid var(--line);background:white;border-radius:7px;width:32px;height:32px;color:var(--ink)}
+.calendar{display:grid;grid-template-columns:repeat(7,minmax(105px,1fr));}
+.weekday{padding:10px 11px;text-align:center;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.7px;border-bottom:1px solid var(--line);background:#fbfcfc}
+.day{min-height:118px;border-right:1px solid #edf1f0;border-bottom:1px solid #edf1f0;padding:8px;min-width:0}
+.day:nth-child(7n){border-right:0}
+.day.outside{background:#fafbfb;color:#b5c0c3}
+.daynum{font-size:11px;color:#6c7d84;margin-bottom:6px}
+.event{background:#e9f5f2;border-left:2px solid #42a89b;border-radius:5px;padding:5px 6px;margin:4px 0;font-size:10px;line-height:1.35;overflow:hidden}
+.event strong{display:block;font-size:10px;color:#166e66}
+.event span{color:#52706f}
+.event.overlap{background:#fff3dc;border-color:#e1a947}
+.event.more{background:#f1f3f4;border:0;color:#61747c}
+.calendar-legend{display:flex;gap:16px;padding:13px 18px;color:var(--muted);font-size:11px;border-top:1px solid var(--line)}
+.legend-chip{width:9px;height:9px;border-radius:3px;background:#42a89b;display:inline-block;margin-right:5px}
+.legend-chip.gold{background:#e1a947}
+.hint{font-size:12px;color:var(--muted);padding:12px 18px;background:#fbfcfc;border-top:1px solid var(--line)}
+.overlay{position:fixed;inset:0;background:#10263180;display:grid;place-items:center;padding:20px;z-index:50}
+.modal{background:white;border-radius:16px;width:min(520px,100%);box-shadow:0 24px 80px #0a202a55}
+.modal-head{padding:19px 22px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.modal-head h2{margin:0;font-size:18px}
+.modal-body{padding:20px 22px;display:grid;gap:14px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field{display:grid;gap:5px}
+.field label{font-size:12px;font-weight:650;color:#425862}
+.field input,.field select{border:1px solid #dce5e3;border-radius:8px;padding:10px 11px;outline:none;width:100%;background:white;color:var(--ink)}
+.field input:focus,.field select:focus{border-color:#54b1a5;box-shadow:0 0 0 3px #54b1a51c}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;padding:0 22px 20px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#173a46;color:#fff;padding:11px 16px;border-radius:9px;font-size:13px;box-shadow:var(--shadow);z-index:60}
+.import-label{display:inline-flex;align-items:center;gap:7px}
+.hidden{display:none!important}
+@media(max-width:850px){
+  .app{grid-template-columns:70px 1fr}
+  .sidebar{padding:20px 10px}
+  .brand{padding:0;justify-content:center}
+  .brand>div:last-child,.nav-label,.nav button .label,.side-note{display:none}
+  .nav button{justify-content:center;padding:12px 6px}
+  .content{padding:25px 18px}
+  .topbar{padding:0 18px}
+  .calendar{grid-template-columns:repeat(7,minmax(75px,1fr));overflow:auto}
+  .day{min-height:90px;padding:5px}
+  .event{font-size:9px;padding:4px}
+  .event strong{font-size:9px}
+}
+@media(max-width:580px){
+  .paste-panel{grid-template-columns:1fr}
+  .paste-panel textarea{grid-column:auto}
+  .stats{grid-template-columns:1fr 1fr}
+  .stat:last-child{grid-column:span 2}
+  .page-head{align-items:center}
+  .page-head h1{font-size:22px}
+  .today{display:none}
+  .roster-summary{display:grid;grid-template-columns:repeat(4,minmax(130px,1fr));gap:10px;padding:15px 18px;background:#fbfcfc;border-bottom:1px solid var(--line)}
+  .roster-box{border:1px solid var(--line);border-radius:9px;padding:10px 12px;background:white;min-height:64px}
+  .roster-box b{display:block;font-size:11px;color:var(--muted);margin-bottom:5px}
+  .roster-box span{font-size:12px}
+  .manual-table{min-width:760px}
+  .manual-table th{background:#326d6b;color:#fff;text-transform:none;letter-spacing:0;font-size:12px}
+  .manual-table td{padding:10px 14px}
+  .manual-table input,.manual-table select{width:100%;border:1px solid #dce5e3;border-radius:7px;padding:9px;background:#fff;color:var(--ink)}
+  .manual-table .manual-shifts-text{min-width:450px}
+  .manual-table select[multiple]{min-height:86px}
+  .manual-table .muted{display:block;margin-top:4px}
+  .calendar-toolbar{padding:12px}
+  .month-control h2{min-width:128px;font-size:14px}
+  .calendar{grid-template-columns:repeat(7,minmax(62px,1fr))}
+  .weekday{padding:8px 2px;font-size:9px}
+  .day{min-height:74px}
+  .event span{display:none}
+  .card-head{padding:15px}
+  .matrix-tools{align-items:flex-start;flex-direction:column}
+  .form-row{grid-template-columns:1fr}
+}
+.calendar .event{background:transparent;border:0;border-radius:0;padding:0 4px;margin:2px 0 0;font-size:12px;line-height:1.3;color:var(--ink);white-space:normal;overflow-wrap:anywhere}
+.calendar .event strong{display:block;font-size:12px;font-weight:400;color:var(--ink)}
+.calendar .event span{display:inline;color:var(--muted)}
+.calendar{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;border-color:#c7ddd5}
+.calendar-toolbar{background:#e9f5f1;border-bottom-color:#c7ddd5}
+.calendar-toolbar .month-control h2{color:#155b50}
+.calendar-toolbar .month-control button{border-color:#c7ddd5;color:#155b50}
+.calendar .weekday{background:#dcefe8;color:#155b50;border-color:#bdd8ce;font:600 12px/1.3 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+.calendar .day{border-color:#d4e5de}
+.calendar .daynum{background:#eff7f3;color:#315f54;border-color:#d4e5de;font:500 12px/1.3 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+.calendar .day.outside{background:#fbfdfc;color:#a8bdb5}
+.calendar .event{font:12px/1.35 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+.calendar .event strong{color:#176b5c;font:500 12px/1.35 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+.calendar .event.more{color:#52796d}
+.calendar .schedule-line{display:flex;align-items:baseline;gap:4px;background:#edf7f2;border-left:3px solid #4c9d84;border-radius:6px;padding:4px 6px;margin:4px 3px;box-shadow:0 1px 3px #17493b12;white-space:normal;overflow-wrap:anywhere}
+.calendar .schedule-time{color:#176b5c;font-weight:700;white-space:nowrap}
+.calendar .schedule-separator{color:#678b7e;font-weight:500}
+.calendar .schedule-names{color:#24483f;font-weight:500}
+.calendar .schedule-line span{display:inline!important;font:inherit}
+.calendar .day .schedule-line:hover{background:#dff0e8}
+
+@page{size:landscape;margin:8mm}
+@media print{
+  html,body{background:#fff!important;color:#152e28!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  .app{display:block;min-height:0}
+  .sidebar,.topbar,.page-head,.stats,.calendar-legend,.content>p,.calendar-toolbar .month-control button,.calendar-toolbar>.button{display:none!important}
+  .main,.content{display:block;width:100%;max-width:none;margin:0;padding:0}
+  .card{border:0;border-radius:0;box-shadow:none;overflow:visible}
+  .calendar-toolbar{display:block;padding:0 0 7px;border:0;background:#fff}
+  .calendar-toolbar .month-control{justify-content:center}
+  .calendar-toolbar .month-control h2{font-size:18pt;color:#155b50}
+  .calendar{display:grid!important;grid-template-columns:repeat(7,minmax(0,1fr))!important;overflow:visible!important;border-color:#9dbdb1}
+  .calendar .weekday,.calendar .daynum{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  .calendar .day{min-height:24mm;break-inside:avoid;background:#fff}
+  .calendar .schedule-line{break-inside:avoid;box-shadow:none}
+}
+
+.monthly-tools{display:grid;grid-template-columns:minmax(115px,.8fr) minmax(115px,.8fr) minmax(170px,1.4fr) minmax(125px,.8fr) auto;gap:12px;align-items:end;padding:16px 18px;border-bottom:1px solid var(--line);background:#f8fbf9}
+.monthly-table{min-width:560px}
+.monthly-table th{background:#e4f1eb;color:#205d50;text-transform:none;letter-spacing:0}
+.monthly-table td{padding:9px 16px}
+.shift-choice{display:flex;align-items:center;gap:8px;color:#315f54}
+.shift-choice input{accent-color:#087f78;width:16px;height:16px}
+.monthly-create{white-space:nowrap}
+.monthly-tools input{min-height:39px}
+@media(max-width:900px){.monthly-tools{grid-template-columns:1fr 1fr}.monthly-create{grid-column:1/-1}}
+@media(max-width:580px){.monthly-tools{grid-template-columns:1fr}.monthly-create{grid-column:auto}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo" title="Calendário de plantões">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+      </div>
+      <div class="brand-text"><strong>Gestão de plantões</strong><small>Obstetrícia</small></div>
+      <button class="sidebar-toggle-btn" onclick="app.toggleSidebar()" title="Recolher / Expandir menu" aria-label="Expandir ou recolher menu">
+        <span class="toggle-icon">‹</span>
+      </button>
+    </div>
+    <div>
+      <div class="nav-label">Equipe</div>
+      <nav class="nav">
+        <button class="active" data-page="equipe"><span class="icon">♙</span><span class="label">Enfermeiros</span></button>
+        <button data-page="plantao"><span class="icon">◷</span><span class="label">Plantões</span></button>
+        <button data-page="disponibilidade"><span class="icon">☑</span><span class="label">Disponibilidade</span></button>
+        <button data-page="manual"><span class="icon">✎</span><span class="label">Inserir/Importar dados</span></button>
+        <button data-page="calendario"><span class="icon">▦</span><span class="label">Calendário</span></button>
+      </nav>
+    </div>
+    <div class="side-link-box" id="sidebar-link-box">
+      <!-- Renderizado dinamicamente com controle de acesso por senha de administrador -->
+    </div>
+  </aside>
+  <main class="main">
+    <header class="topbar">
+      <div class="crumb">Gestão da equipe&nbsp; / &nbsp;<strong id="crumb">Enfermeiros</strong></div>
+      <div class="topbar-right">
+        <span id="save-status" style="font-size:12px;color:#087f78;display:flex;align-items:center;gap:6px;background:#e5f5f2;padding:4px 10px;border-radius:20px;font-weight:500">
+          <span style="width:7px;height:7px;border-radius:50%;background:#087f78;display:inline-block"></span> Salvo no navegador
+        </span>
+        <span class="today" id="today"></span>
+        <div class="avatar">E</div>
+      </div>
+    </header>
+    <section class="content" id="view"></section>
+  </main>
+</div>
+<div id="modal-root"></div>
+<div id="toast-root"></div>
+
+<script>
+(()=>{
+  'use strict';
+  const KEY='escala-clara-v1';
+  const DEFAULT_LINK='https://docs.google.com/forms/d/e/1FAIpQLScdKzwGGrK8FA7Ubb-Sg3xEmmJUKFbB0P0v9ly6w0WHknD27Q/viewform?usp=dialog';
+  let db=load(),
+      page='manual',
+      month=new Date(new Date().getFullYear(),new Date().getMonth(),1),
+      matrixFilter='all',
+      availTab='todos',
+      plantaoMonth=new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0'),
+      monthlyHospital='',
+      monthlyVacancies=2;
+
+  const $=s=>document.querySelector(s),
+        esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  function load(){
+    try{
+      let raw=localStorage.getItem(KEY)||sessionStorage.getItem(KEY);
+      let x=JSON.parse(raw)||{};
+      x.nurses=x.nurses||[];
+      x.shifts=x.shifts||[];
+      x.availability=x.availability||{};
+      x.rosters=x.rosters||{};
+      x.manualEntries=x.manualEntries||[];
+      if(!x.externalLink || x.externalLink==='https://forms.google.com' || x.externalLink.includes('1FAIpQLScgV3081gzDz5Ff24UJjRFN3K7UfPLrtTU-rmIZjs4o8DPXEQ')){
+        x.externalLink=DEFAULT_LINK;
+      }
+      x.adminPassword=x.adminPassword||'admin123';
+      x.shifts.forEach((s,i)=>{
+        s.code=s.code||('P'+String(i+1).padStart(3,'0'));
+        s.hospital=s.hospital||s.unit||'';
+        s.vacancies=Number(s.vacancies||2);
+      });
+      return x;
+    }catch{
+      return{nurses:[],shifts:[],availability:{},rosters:{},manualEntries:[],externalLink:DEFAULT_LINK,adminPassword:'admin123'};
+    }
+  }
+
+  function save(){
+    try{
+      localStorage.setItem(KEY,JSON.stringify(db));
+      updateSaveBadge('Salvo no navegador','teal');
+    }catch(e){
+      try{
+        sessionStorage.setItem(KEY,JSON.stringify(db));
+        updateSaveBadge('Salvo (sessão)','gold');
+      }catch(err){
+        updateSaveBadge('Erro ao salvar no cache','red');
+      }
+    }
+  }
+
+  function updateSaveBadge(msg,type){
+    const el=$('#save-status');
+    if(!el) return;
+    const styles={
+      teal:{bg:'#e5f5f2',color:'#087f78',dot:'#087f78'},
+      gold:{bg:'#fff3dc',color:'#b27b18',dot:'#e1a947'},
+      red:{bg:'#fcf0f0',color:'#a94f4f',dot:'#b85454'}
+    }[type]||{bg:'#e5f5f2',color:'#087f78',dot:'#087f78'};
+    el.style.background=styles.bg;
+    el.style.color=styles.color;
+    el.innerHTML=`<span style="width:7px;height:7px;border-radius:50%;background:${styles.dot};display:inline-block"></span> ${esc(msg)}`;
+  }
+
+  function id(){ return crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2); }
+  function dateBR(d){ return d?new Date(d+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}):''; }
+  function formatMonthYear(d){ let s=d.toLocaleDateString('pt-BR',{month:'long',year:'numeric'}); return s.charAt(0).toUpperCase()+s.slice(1); }
+  function initials(n){ return n.trim().split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase(); }
+  function empty(title,desc){ return `<div class="empty"><b>${title}</b>${desc}</div>`; }
+  
+  function toast(t){
+    const r=$('#toast-root');
+    r.innerHTML=`<div class="toast">${esc(t)}</div>`;
+    setTimeout(()=>r.innerHTML='',3000);
+  }
+
+  function focusCalendarMonth(){
+    let shifts=(db.shifts||[]).filter(s=>/^\d{4}-\d{2}-\d{2}$/.test(s.date||''));
+    let y=month.getFullYear(),m=String(month.getMonth()+1).padStart(2,'0'),key=y+'-'+m;
+    if(shifts.some(s=>s.date.slice(0,7)===key)) return;
+    let now=new Date(),
+        today=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0'),
+        ordered=shifts.slice().sort((a,b)=>a.date.localeCompare(b.date)),
+        target=ordered.find(s=>s.date>=today)||ordered[ordered.length-1];
+    if(target){
+      let d=new Date(target.date+'T12:00:00');
+      month=new Date(d.getFullYear(),d.getMonth(),1);
+    }
+  }
+
+  function setPage(p){
+    if(p==='calendario') focusCalendarMonth();
+    page=p;
+    document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===p));
+    $('#crumb').textContent={equipe:'Enfermeiros',plantao:'Plantões',disponibilidade:'Disponibilidade',calendario:'Calendário',manual:'Inserir/Importar dados'}[p];
+    render();
+  }
+
+  document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>setPage(b.dataset.page));
+  $('#today').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'short',day:'numeric',month:'short'});
+
+  function render(){
+    if(page==='equipe') renderNurses();
+    if(page==='plantao') renderShifts();
+    if(page==='disponibilidade') renderAvailability();
+    if(page==='manual') renderManual();
+    if(page==='calendario') renderCalendar();
+    setTimeout(()=>app.updateLinkUI(), 10);
+  }
+
+  function header(title,desc,button){
+    return `<div class="page-head"><div><h1>${title}</h1><p>${desc}</p></div>${button||''}</div>`;
+  }
+
+  function stats(){
+    const todayStr=new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0')+'-'+String(new Date().getDate()).padStart(2,'0'),
+          future=db.shifts.filter(s=>s.date>=todayStr).length,
+          yes=Object.values(db.availability).filter(v=>v==='yes').length;
+    return `<div class="stats">
+      <div class="stat"><div class="stat-label">Enfermeiros cadastrados</div><div class="stat-value">${db.nurses.length}</div><div class="stat-foot">na equipe</div></div>
+      <div class="stat"><div class="stat-label">Plantões cadastrados</div><div class="stat-value">${db.shifts.length}</div><div class="stat-foot">${future} futuros</div></div>
+      <div class="stat"><div class="stat-label">Disponibilidades confirmadas</div><div class="stat-value">${yes}</div><div class="stat-foot">respostas “sim”</div></div>
+    </div>`;
+  }
+
+  function renderNurses(){
+    $('#view').innerHTML=header('Enfermeiros','Cadastre e mantenha os dados da equipe.',`<button class="button primary" onclick="app.openNurse()">＋ Novo enfermeiro</button>`)+stats()+`
+    <div class="card">
+      <div class="card-head"><h2>Equipe cadastrada</h2><small>${db.nurses.length} profissional${db.nurses.length===1?'':'es'}</small></div>
+      ${db.nurses.length?`<div class="table-wrap"><table><thead><tr><th>Profissional</th><th>Registro profissional</th><th>Contato</th><th>Vínculo</th><th></th></tr></thead><tbody>
+      ${db.nurses.map(n=>`<tr>
+        <td><div class="person"><div class="initial">${esc(initials(n.name))}</div><div><strong>${esc(n.name)}</strong><div class="muted">${esc(n.role||'Enfermeiro(a)')}</div></div></div></td>
+        <td>${esc(n.reg||'—')}</td>
+        <td>${esc(n.phone||'—')}</td>
+        <td><span class="tag gray">${esc(n.type||'Equipe')}</span></td>
+        <td><div class="actions"><button class="icon-btn" title="Editar" onclick="app.openNurse('${n.id}')">✎</button><button class="icon-btn" title="Excluir" onclick="app.removeNurse('${n.id}')">×</button></div></td>
+      </tr>`).join('')}</tbody></table></div>`:empty('Sua equipe começa aqui','Adicione os enfermeiros para começar a organizar as escalas.')}
+    </div>
+    <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">
+      <button class="button" onclick="app.exportData()">⇩ Exportar cópia dos dados</button>
+      <label class="button import-label">⇧ Importar cópia<input type="file" accept="application/json,.json" class="hidden" onchange="app.importData(this)"></label>
+      <button class="button" onclick="app.resetDemo()">Carregar exemplo</button>
+    </div>`;
+  }
+
+  function renderShifts(){
+    let shifts=[...(db.shifts||[])].sort((a,b)=>a.date.localeCompare(b.date)||String(a.start||'').localeCompare(String(b.start||'')));
+    let months=[...new Set(shifts.map(s=>(s.date||'').slice(0,7)).filter(Boolean))].sort();
+    let currentFilter=plantaoMonth||'all';
+    let filteredShifts=currentFilter==='all'?shifts:shifts.filter(s=>(s.date||'').slice(0,7)===currentFilter);
+
+    $('#view').innerHTML=header('Plantões','Lista de plantões identificados a partir dos dados inseridos manualmente.')+stats()+`
+    <div class="card">
+      <div class="card-head" style="flex-wrap:wrap;gap:10px">
+        <h2>Plantões identificados (${filteredShifts.length})</h2>
+        ${months.length?`<div style="display:flex;align-items:center;gap:8px">
+          <label style="font-size:12px;color:var(--muted)">Filtrar por mês:</label>
+          <select style="border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px;background:white" onchange="app.setPlantaoFilterMonth(this.value)">
+            <option value="all" ${currentFilter==='all'?'selected':''}>Todos os meses (${shifts.length})</option>
+            ${months.map(m=>{
+              let [y,mo]=m.split('-');
+              let date=new Date(Number(y),Number(mo)-1,1);
+              return `<option value="${m}" ${currentFilter===m?'selected':''}>${formatMonthYear(date)}</option>`;
+            }).join('')}
+          </select>
+        </div>`:''}
+      </div>
+      ${filteredShifts.length?`<div class="table-wrap"><table><thead><tr><th>Código</th><th>Plantão</th><th>Data</th><th>Horário</th><th>Hospital</th><th>Enfermeiro(a) Escalado(a)</th><th>Vagas</th><th></th></tr></thead><tbody>
+      ${filteredShifts.map(s=>{
+        let r=db.rosters?.[s.id]||{},
+            assignedIds=r.assigned?.length?r.assigned:db.nurses.filter(n=>db.availability[`${n.id}:${s.id}`]==='yes').slice(0,s.vacancies||2).map(n=>n.id),
+            assignedNurses=assignedIds.map(x=>db.nurses.find(n=>n.id===x)).filter(Boolean),
+            nurseListHtml=assignedNurses.length
+              ? assignedNurses.map(n=>`<span class="tag" style="background:#e5f5f2;color:#087f78;font-weight:600;margin:2px 4px 2px 0;display:inline-flex;align-items:center;gap:5px">${esc(n.name)}<button type="button" onclick="app.removeNurseFromShift('${s.id}','${n.id}')" style="border:0;background:transparent;color:#b85454;font-size:14px;font-weight:bold;cursor:pointer;padding:0 2px;line-height:1;display:inline-flex;align-items:center;justify-content:center" title="Remover ${esc(n.name)} deste plantão">×</button></span>`).join('')
+              : `<span class="muted">Sem profissional alocado</span>`;
+        return `<tr>
+          <td><strong>${esc(s.code||'')}</strong></td>
+          <td>${esc(s.name)}</td>
+          <td>${dateBR(s.date)}</td>
+          <td>${s.start} – ${s.end}</td>
+          <td>${esc(s.hospital||s.unit||'—')}</td>
+          <td>${nurseListHtml}</td>
+          <td>${assignedNurses.length}/${s.vacancies||2}</td>
+          <td><div class="actions"><button class="icon-btn" title="Editar" onclick="app.openShift('${s.id}')">✎</button><button class="icon-btn" title="Excluir" onclick="app.removeShift('${s.id}')">×</button></div></td>
+        </tr>`;
+      }).join('')}</tbody></table></div>`:empty('Nenhum plantão cadastrado','Insira a disponibilidade e os códigos dos plantões na aba “Inserir/Importar dados”.')}
+    </div>`;
+  }
+
+  function renderAvailability(){
+    $('#view').innerHTML=header('Disponibilidade e escala','Marque Sim ou Não para cada plantão e monte a lista de escalados e substitutos.',`<button class="button primary" onclick="app.openShift()">＋ Novo plantão</button>`)+stats()+`
+    <div class="card">
+      <div class="tabs">
+        <button class="tab ${availTab==='todos'?'active':''}" onclick="app.availTab('todos')">Todos os profissionais</button>
+        <button class="tab ${availTab==='respondidos'?'active':''}" onclick="app.availTab('respondidos')">Com resposta</button>
+        <button class="tab ${availTab==='pendentes'?'active':''}" onclick="app.availTab('pendentes')">Pendentes</button>
+      </div>
+      <div class="matrix-tools">
+        <select onchange="app.matrixFilter(this.value)">
+          <option value="all">Todos os plantões</option>
+          ${[...db.shifts].sort((a,b)=>a.date.localeCompare(b.date)).map(s=>`<option value="${s.id}" ${matrixFilter===s.id?'selected':''}>${esc(s.code)} · ${dateBR(s.date)} ${s.start}</option>`).join('')}
+        </select>
+        <div class="matrix-legend"><span><i class="dot"></i> Sim</span><span><i class="dot off"></i> Não / pendente</span></div>
+      </div>
+      ${db.nurses.length&&db.shifts.length?`
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Enfermeiro(a)</th>
+              ${db.shifts.filter(s=>matrixFilter==='all'||matrixFilter===s.id).sort((a,b)=>a.date.localeCompare(b.date)).map(s=>`<th class="shift-head"><b>${esc(s.code)} · ${esc(s.hospital||s.name)}</b><small>${dateBR(s.date)} às ${s.start} · ${s.vacancies||2} vagas</small></th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            ${db.nurses.filter(n=>availTab==='todos'||(availTab==='respondidos'?db.shifts.some(s=>db.availability[`${n.id}:${s.id}`]):db.shifts.some(s=>!db.availability[`${n.id}:${s.id}`]))).map(n=>`<tr>
+              <td><div class="person"><div class="initial">${esc(initials(n.name))}</div><strong>${esc(n.name)}</strong></div></td>
+              ${db.shifts.filter(s=>matrixFilter==='all'||matrixFilter===s.id).sort((a,b)=>a.date.localeCompare(b.date)).map(s=>{
+                let v=db.availability[`${n.id}:${s.id}`]||'';
+                return `<td><div class="availability"><button class="yes ${v==='yes'?'selected':''}" onclick="app.setAvail('${n.id}','${s.id}','yes')">Sim</button><button class="no ${v==='no'?'selected':''}" onclick="app.setAvail('${n.id}','${s.id}','no')">Não</button></div></td>`;
+              }).join('')}
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div class="hint">
+        A distribuição segue a ordem de cadastro: preenche as vagas e coloca os demais disponíveis na fila de espera.
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Código</th><th>Plantão</th><th>Data/hora</th><th>Vagas</th><th>Escalados</th><th>Fila de espera (substitutos)</th><th>Plantão terceiro*</th></tr>
+          </thead>
+          <tbody>
+            ${[...db.shifts].sort((a,b)=>a.date.localeCompare(b.date)).map(s=>{
+              let r=db.rosters?.[s.id]||{},
+                  names=ids=>(ids||[]).map(x=>db.nurses.find(n=>n.id===x)?.name).filter(Boolean).join(', ')||'–';
+              return `<tr><td>${esc(s.code)}</td><td>${esc(s.hospital||s.name)}</td><td>${dateBR(s.date)} às ${s.start}</td><td>${s.vacancies||2}</td><td>${esc(names(r.assigned))}</td><td>${esc(names(r.waitlist))}</td><td>${esc(s.thirdShift||'—')}</td></tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div class="hint">* A distribuição é uma sugestão inicial pela ordem de cadastro. Revise a cobertura antes de divulgar.</div>
+      `:empty(db.nurses.length?'Cadastre um plantão':'Cadastre os enfermeiros','São necessários profissionais e plantões para preencher a matriz.')}
+    </div>`;
+  }
+
+  function manualRowHtml(x={}){
+    let shiftText=x.shiftText||((x.shifts||[]).map(id=>db.shifts.find(s=>s.id===id)?.code).filter(Boolean).join(', '));
+    return `<tr>
+      <td><input class="manual-name" value="${esc(x.name||'')}" list="nurse-options" placeholder="Nome do enfermeiro"></td>
+      <td><select class="manual-available"><option value="yes" ${(x.available||'yes')==='yes'?'selected':''}>SIM</option><option value="no" ${x.available==='no'?'selected':''}>NÃO</option></select></td>
+      <td><input class="manual-shifts-text" value="${esc(shiftText)}" placeholder="Cole códigos e horários dos plantões" ${x.available==='no'?'disabled':''}></td>
+      <td><button class="icon-btn" type="button" title="Remover linha" onclick="app.removeManualRow(this)">×</button></td>
+    </tr>`;
+  }
+
+  function renderManual(){
+    let entries=db.manualEntries||[];
+    let rows=(entries.length?entries:[{}]).map(manualRowHtml).join(''),
+        hospital=[...new Set((db.shifts||[]).map(s=>s.hospital||s.unit).filter(Boolean))][0]||'hospital';
+    $('#view').innerHTML=header('Inserir/Importar dados','Cole diretamente as linhas da sua planilha ou preencha a tabela.',`<button class="button" onclick="app.addManualRow()">＋ Adicionar linha</button>`)+`
+    <div class="card">
+      <div class="card-head"><h2>Disponibilidade da equipe</h2><small>As respostas serão integradas à escala</small></div>
+      <datalist id="nurse-options">${(db.nurses||[]).map(n=>`<option value="${esc(n.name||'')}"></option>`).join('')}</datalist>
+      <div class="paste-panel">
+        <label for="manual-paste"><strong>Cole aqui as três colunas copiadas da planilha</strong><span>Inclua o cabeçalho se quiser; ele será ignorado na importação.</span></label>
+        <textarea id="manual-paste" rows="5" placeholder="Nome do enfermeiro[TAB]Disponível?[TAB]Plantões disponíveis"></textarea>
+        <button class="button primary" onclick="app.importManualPaste()">Importar linhas coladas</button>
+      </div>
+      <div class="table-wrap">
+        <table class="manual-table">
+          <thead>
+            <tr><th>Nome do enfermeiro</th><th>Você está disponível para assumir plantões neste período?</th><th>Quais plantões você estará disponível para a ${esc(hospital)}?</th><th></th></tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <div class="hint">Depois de colar as linhas no campo acima, clique em Importar linhas coladas. Na terceira coluna, os códigos dos plantões (por exemplo, P003) serão associados aos plantões cadastrados.</div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;padding:16px 18px">
+        <button class="button" onclick="app.addManualRow()">＋ Adicionar linha</button>
+        <button class="button primary" onclick="app.saveManual()">Salvar dados</button>
+      </div>
+    </div>`;
+  }
+
+  function renderCalendar(){
+    $('#view').innerHTML=header('Calendário de plantões','Visualize a escala mensal por dia, com escalados, substitutos e hospital.',`<div style="display:flex;gap:8px"><button class="button" onclick="app.exportCalendar()">⇩ Exportar escala (CSV)</button><button class="button primary" onclick="app.exportCalendarPdf()">▣ Exportar calendário (PDF)</button></div>`)+stats()+`
+    <div class="card">
+      <div class="calendar-toolbar">
+        <div class="month-control">
+          <button aria-label="Mês anterior" onclick="app.shiftMonth(-1)">‹</button>
+          <h2>${formatMonthYear(month)}</h2>
+          <button aria-label="Próximo mês" onclick="app.shiftMonth(1)">›</button>
+        </div>
+        <button class="button" onclick="app.goToday()">Hoje</button>
+      </div>
+      <div class="calendar">
+        ${['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map(x=>`<div class="weekday">${x}</div>`).join('')}
+        ${calendarCells()}
+      </div>
+      <div class="calendar-legend">
+        <span><i class="legend-chip"></i> Escalados</span>
+        <span><i class="legend-chip gold"></i> Horários coincidentes</span>
+      </div>
+    </div>
+    <p class="muted" style="margin:12px 2px">A montagem inicial segue a ordem de cadastro e o número de vagas. Revise a escala antes de publicá-la.</p>`;
+  }
+
+  function calendarCells(){
+    let first=new Date(month.getFullYear(),month.getMonth(),1),
+        start=new Date(first);
+    start.setDate(1-first.getDay());
+    let out='';
+    for(let i=0;i<42;i++){
+      let d=new Date(start);
+      d.setDate(start.getDate()+i);
+      let ds=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`,
+          shifts=db.shifts.filter(s=>{
+            if(s.date!==ds) return false;
+            let r=db.rosters?.[s.id]||{},
+                ids=r.assigned?.length?r.assigned:db.nurses.filter(n=>db.availability[`${n.id}:${s.id}`]==='yes').slice(0,s.vacancies||2).map(n=>n.id);
+            return ids.some(x=>db.nurses.find(n=>n.id===x)?.name);
+          }).sort((a,b)=>String(a.start||'').localeCompare(String(b.start||''))),
+          outside=d.getMonth()!==month.getMonth();
+      out+=`<div class="day ${outside?'outside':''}">
+        <div class="daynum">${d.getDate()}</div>
+        ${shifts.slice(0,3).map(s=>{
+          let r=db.rosters?.[s.id]||{},
+              ids=r.assigned?.length?r.assigned:db.nurses.filter(n=>db.availability[`${n.id}:${s.id}`]==='yes').slice(0,s.vacancies||2).map(n=>n.id),
+              names=ids.map(x=>db.nurses.find(n=>n.id===x)?.name).filter(Boolean);
+          return `<div class="event schedule-line" title="${esc(s.name||s.code||'Plantão')}">
+            <span class="schedule-time">${esc(s.start||'—')}</span>
+            <span class="schedule-separator">-</span>
+            <span class="schedule-names">${esc(names.join(', '))}</span>
+          </div>`;
+        }).join('')}
+        ${shifts.length>3?`<div class="event more">+${shifts.length-3} plantões</div>`:''}
+      </div>`;
+    }
+    return out;
+  }
+
+  function pdfHex(value){
+    let map={'€':128,'‚':130,'ƒ':131,'„':132,'…':133,'†':134,'‡':135,'ˆ':136,'‰':137,'Š':138,'‹':139,'Œ':140,'Ž':142,'‘':145,'’':146,'“':147,'”':148,'•':149,'–':150,'—':151,'˜':152,'™':153,'š':154,'›':155,'œ':156,'ž':158,'Ÿ':159};
+    return Array.from(String(value).normalize('NFC')).map(ch=>{
+      let c=ch.codePointAt(0);
+      if(c>=32&&c<=126||c>=160&&c<=255) return c.toString(16).padStart(2,'0');
+      return(map[ch]??63).toString(16).padStart(2,'0');
+    }).join('').toUpperCase();
+  }
+
+  function pdfRgb(hex){
+    let n=parseInt(hex.replace('#',''),16);
+    return `${((n>>16)&255)/255} ${((n>>8)&255)/255} ${(n&255)/255}`;
+  }
+
+  function pdfWrap(text,max){
+    let words=String(text).split(/\s+/),lines=[],line='';
+    for(let w of words){
+      if(line&&(`${line} ${w}`).length>max){ lines.push(line); line=w; }
+      else line=line?`${line} ${w}`:w;
+    }
+    if(line) lines.push(line);
+    return lines;
+  }
+
+  function makeCalendarPdf(){
+    let W=842,H=595,M=24,GW=W-2*M,CW=GW/7,BH=30,WH=20,CH=80,
+        commands=[],
+        fill=(x,y,w,h,color)=>commands.push(`${pdfRgb(color)} rg ${x.toFixed(2)} ${y.toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re f`),
+        stroke=(x,y,w,h,color,width=0.6)=>commands.push(`${pdfRgb(color)} RG ${width} w ${x.toFixed(2)} ${y.toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re S`),
+        txt=(x,y,size,text,color='#173f35',font='F1')=>commands.push(`BT /${font} ${size} Tf ${pdfRgb(color)} rg 1 0 0 1 ${x.toFixed(2)} ${y.toFixed(2)} Tm <${pdfHex(text)}> Tj ET`);
+
+    let bandY=H-M-BH;
+    fill(M,bandY,GW,BH,'#E9F5F1');
+    stroke(M,bandY,GW,BH,'#C7DDD5');
+    txt(M+8,bandY+9,16,formatMonthYear(month),'#155B50','F2');
+
+    let weekdayY=bandY-WH,days=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+    days.forEach((d,i)=>{
+      let x=M+i*CW;
+      fill(x,weekdayY,CW,WH,'#DCEFE8');
+      stroke(x,weekdayY,CW,WH,'#BDD8CE');
+      txt(x+5,weekdayY+6,8,d,'#155B50','F2');
+    });
+
+    let first=new Date(month.getFullYear(),month.getMonth(),1),
+        start=new Date(first);
+    start.setDate(1-first.getDay());
+
+    for(let i=0;i<42;i++){
+      let d=new Date(start);
+      d.setDate(start.getDate()+i);
+      let ds=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`,
+          col=i%7,row=Math.floor(i/7),
+          x=M+col*CW,y=weekdayY-(row+1)*CH;
+
+      fill(x,y,CW,CH,'#FFFFFF');
+      stroke(x,y,CW,CH,'#C7DDD5');
+      fill(x,y+CH-14,CW,14,'#EFF7F3');
+      commands.push(`${pdfRgb('#D4E5DE')} RG 0.5 w ${x.toFixed(2)} ${(y+CH-14).toFixed(2)} m ${(x+CW).toFixed(2)} ${(y+CH-14).toFixed(2)} l S`);
+      txt(x+CW-16,y+CH-10,7,String(d.getDate()),d.getMonth()===month.getMonth()?'#315F54':'#A8BDB5');
+
+      let shifts=db.shifts.filter(s=>{
+        if(s.date!==ds) return false;
+        let r=db.rosters?.[s.id]||{},
+            ids=r.assigned?.length?r.assigned:db.nurses.filter(n=>db.availability[`${n.id}:${s.id}`]==='yes').slice(0,s.vacancies||2).map(n=>n.id);
+        return ids.some(id=>db.nurses.find(n=>n.id===id)?.name);
+      }).sort((a,b)=>String(a.start||'').localeCompare(String(b.start||''))).slice(0,3),
+          cy=y+CH-20;
+
+      for(let s of shifts){
+        let r=db.rosters?.[s.id]||{},
+            ids=r.assigned?.length?r.assigned:db.nurses.filter(n=>db.availability[`${n.id}:${s.id}`]==='yes').slice(0,s.vacancies||2).map(n=>n.id),
+            names=ids.map(id=>db.nurses.find(n=>n.id===id)?.name).filter(Boolean),
+            lines=pdfWrap(`${s.start||'—'} - ${names.join(', ')}`,31),
+            cardH=lines.length*8+5;
+
+        cy-=cardH+3;
+        if(cy<y+2) break;
+        fill(x+3,cy,CW-6,cardH,'#EDF7F2');
+        fill(x+3,cy,2.5,cardH,'#4C9D84');
+        lines.forEach((line,j)=>txt(x+8,cy+cardH-9-j*8,6.6,line,j===0?'#176B5C':'#24483F',j===0?'F2':'F1'));
+      }
+      if(db.shifts.filter(s=>s.date===ds).length>3&&cy>y+9){
+        txt(x+5,y+4,6.5,`+${db.shifts.filter(s=>s.date===ds).length-3} plantões`,'#52796D');
+      }
+    }
+
+    let stream=commands.join('\n'),objs=[];
+    objs[1]='<< /Type /Catalog /Pages 2 0 R >>';
+    objs[2]='<< /Type /Pages /Kids [3 0 R] /Count 1 >>';
+    objs[3]='<< /Type /Page /Parent 2 0 R /MediaBox [0 0 842 595] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>';
+    objs[4]='<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>';
+    objs[5]='<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>';
+    objs[6]=`<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`;
+
+    let pdf='%PDF-1.4\n',offsets=[0];
+    for(let i=1;i<objs.length;i++){
+      offsets[i]=pdf.length;
+      pdf+=`${i} 0 obj\n${objs[i]}\nendobj\n`;
+    }
+    let xref=pdf.length;
+    pdf+=`xref\n0 ${objs.length}\n0000000000 65535 f \n`;
+    for(let i=1;i<objs.length;i++) pdf+=`${String(offsets[i]).padStart(10,'0')} 00000 n \n`;
+    pdf+=`trailer\n<< /Size ${objs.length} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
+    return Uint8Array.from(pdf,c=>c.charCodeAt(0)&255);
+  }
+
+  function modal(title,body,submit,label){
+    $('#modal-root').innerHTML=`<div class="overlay" onclick="if(event.target===this)app.closeModal()"><form class="modal" onsubmit="${submit}"><div class="modal-head"><h2>${title}</h2><button type="button" class="icon-btn" onclick="app.closeModal()">×</button></div><div class="modal-body">${body}</div><div class="modal-actions"><button type="button" class="button" onclick="app.closeModal()">Cancelar</button><button class="button primary">${label||'Salvar'}</button></div></form></div>`;
+    setTimeout(()=>$('#modal-root input')?.focus(),50);
+  }
+
+  window.app={
+    setPlantaoMonthParts(){
+      let mo=document.querySelector('#monthlyMonth').value,yr=document.querySelector('#monthlyYear').value;
+      plantaoMonth=yr+'-'+mo;
+      renderShifts();
+    },
+    setMonthlyHospital(v){ monthlyHospital=v; },
+    setMonthlyVacancies(v){ monthlyVacancies=Math.max(1,Number(v)||1); },
+    createMonthlyShifts(){
+      let ym=plantaoMonth||(new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0')),
+          hospital=(document.querySelector('#monthlyHospital').value.trim()||monthlyHospital||db.shifts[0]?.hospital||'Humân'),
+          vacancies=Math.max(1,Number(document.querySelector('#monthlyVacancies').value)||2),
+          checks=[...document.querySelectorAll('.monthly-shift:checked')];
+
+      if(!checks.length){
+        toast('Marque ao menos um turno para criar.');
+        return;
+      }
+
+      let max=db.shifts.reduce((m,x)=>Math.max(m,parseInt(String(x.code||'').slice(1),10)||0),0),
+          created=0,skipped=0;
+
+      for(let c of checks){
+        let date=c.dataset.date,
+            start=c.dataset.start,
+            exists=db.shifts.some(s=>s.date===date&&s.start===start&&(s.hospital||s.unit||'').trim().toLocaleLowerCase('pt-BR')===hospital.toLocaleLowerCase('pt-BR'));
+        if(exists){ skipped++; continue; }
+        let hour=Number(start.slice(0,2)),
+            endHour=(hour+12)%24,
+            end=`${String(endHour).padStart(2,'0')}:${start.slice(3)}`,
+            code='P'+String(++max).padStart(3,'0'),
+            name=start==='07:00'?'Diurno':'Noturno';
+        db.shifts.push({id:id(),code,name,date,start,end,hospital,unit:hospital,vacancies});
+        created++;
+      }
+
+      if(!created){
+        toast('Os turnos selecionados já estavam cadastrados.');
+        return;
+      }
+
+      monthlyHospital=hospital;
+      monthlyVacancies=vacancies;
+      plantaoMonth=ym;
+      db.rosters=db.rosters||{};
+      try{ save(); }catch{
+        renderShifts();
+        toast('Plantões criados (salvamento limitado).');
+        return;
+      }
+      renderShifts();
+      toast(`${created} plantões criados${skipped?`; ${skipped} já existiam`:''}`);
+    },
+
+    addManualRow(){
+      document.querySelector('.manual-table tbody').insertAdjacentHTML('beforeend',manualRowHtml());
+    },
+
+    importManualPaste(){
+      let box=document.querySelector('#manual-paste'),text=box?.value||'';
+      if(!text.trim()){ toast('Cole as três colunas no campo acima primeiro.'); return; }
+      let lines=text.replace(/\r/g,'').split('\n').filter(x=>x.trim());
+      if(lines.length&&/nome do enfermeiro/i.test(lines[0])) lines.shift();
+      let rows=lines.map(line=>{
+        let c=line.split('\t');
+        if(c.length<2&&line.includes(';')) c=line.split(';');
+        let answer=(c[1]||'').trim().toLocaleLowerCase('pt-BR');
+        return{
+          name:(c[0]||'').trim(),
+          available:['sim','s','yes','y','true'].includes(answer)?'yes':'no',
+          shiftText:(c.slice(2).join(' ')||'').trim()
+        };
+      }).filter(x=>x.name);
+
+      document.querySelector('.manual-table tbody').innerHTML=(rows.length?rows:[{}]).map(manualRowHtml).join('');
+      box.value='';
+      toast(`${rows.length} linha(s) importada(s)`);
+    },
+
+    removeManualRow(button){
+      let body=document.querySelector('.manual-table tbody'),row=button.closest('tr');
+      if(row) row.remove();
+      if(!body.children.length) body.insertAdjacentHTML('beforeend',manualRowHtml());
+    },
+
+    saveManual(){
+      let paste=document.querySelector('#manual-paste');
+      if(paste?.value.trim()) this.importManualPaste();
+      let rows=[...document.querySelectorAll('.manual-table tbody tr')].map(tr=>({
+        name:tr.querySelector('.manual-name').value.trim(),
+        available:tr.querySelector('.manual-available').value,
+        shiftText:tr.querySelector('.manual-shifts-text').value.trim()
+      })).filter(x=>x.name);
+
+      if(!rows.length){ toast('Insira ou cole ao menos um nome de enfermeiro.'); return; }
+
+      db.shifts=db.shifts||[];
+      let details=[];
+      for(let row of rows){
+        for(let m of row.shiftText.matchAll(/\b(P\d+)\s+(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}:\d{2})\s+([^,;\n]+)/gi)){
+          details.push({code:m[1].toUpperCase(),day:m[2],month:m[3],year:m[4],start:m[5],hospital:m[6].trim()});
+        }
+      }
+
+      for(let d of details){
+        if(db.shifts.some(s=>String(s.code||'').toUpperCase()===d.code)) continue;
+        let [hh,mm]=d.start.split(':').map(Number),
+            endHour=(hh+12)%24,
+            end=`${String(endHour).padStart(2,'0')}:${String(mm).padStart(2,'0')}`;
+        db.shifts.push({id:id(),code:d.code,name:hh>=6&&hh<18?'Diurno':'Noturno',date:`${d.year}-${d.month}-${d.day}`,start:d.start,end,hospital:d.hospital||'Hospital',unit:d.hospital||'Hospital',vacancies:2});
+      }
+
+      rows=rows.map(row=>{
+        let codes=[...row.shiftText.matchAll(/\bP\d+\b/gi)].map(m=>m[0].toUpperCase()),
+            shifts=db.shifts.filter(s=>codes.includes(String(s.code||'').toUpperCase())).map(s=>s.id);
+        return{...row,shifts};
+      });
+
+      if(rows.some(x=>x.available==='yes'&&!x.shifts.length)){
+        toast('Plantões não identificados. Inclua código e data/hora (ex: P003 09/08/2026 07:00).');
+        return;
+      }
+
+      db.manualEntries=rows;
+      for(let row of rows){
+        let nurse=db.nurses.find(n=>(n.name||'').trim().toLocaleLowerCase('pt-BR')===row.name.toLocaleLowerCase('pt-BR'));
+        if(!nurse){
+          nurse={id:id(),name:row.name,reg:'',phone:'',role:'Enfermeiro(a)',type:'Equipe'};
+          db.nurses.push(nurse);
+        }
+        for(let shift of db.shifts){
+          let key=nurse.id+':'+shift.id;
+          if(row.available==='no') db.availability[key]='no';
+          else if(row.shifts.includes(shift.id)) db.availability[key]='yes';
+          else if(!db.availability[key]) db.availability[key]='no';
+        }
+      }
+
+      db.rosters=db.rosters||{};
+      db.shifts.forEach(s=>{
+        let available=db.nurses.filter(n=>db.availability[`${n.id}:${s.id}`]==='yes'),v=s.vacancies||2;
+        db.rosters[s.id]={assigned:available.slice(0,v).map(n=>n.id),waitlist:available.slice(v).map(n=>n.id),third:[]};
+      });
+
+      try{ save(); }catch{ toast('Erro no salvamento local.'); return; }
+      renderManual();
+      toast('Dados salvos e escala atualizada');
+    },
+
+    openNurse(nid){
+      let n=db.nurses.find(x=>x.id===nid)||{};
+      modal(nid?'Editar enfermeiro':'Novo enfermeiro',`
+        <input type="hidden" name="id" value="${n.id||''}">
+        <div class="field"><label>Nome completo *</label><input name="name" required maxlength="90" value="${esc(n.name||'')}" placeholder="Ex.: Ana Souza"></div>
+        <div class="form-row">
+          <div class="field"><label>Registro profissional</label><input name="reg" value="${esc(n.reg||'')}" placeholder="COREN"></div>
+          <div class="field"><label>Contato</label><input name="phone" value="${esc(n.phone||'')}" placeholder="Telefone ou e-mail"></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>Função / especialidade</label><input name="role" value="${esc(n.role||'')}" placeholder="Enfermeiro(a)"></div>
+          <div class="field"><label>Vínculo</label><select name="type">${['Equipe','Efetivo','Temporário','Residente','Outro'].map(t=>`<option ${n.type===t?'selected':''}>${t}</option>`).join('')}</select></div>
+        </div>
+      `,`return app.saveNurse(event)`,'Salvar enfermeiro');
+    },
+
+    saveNurse(e){
+      e.preventDefault();
+      let f=new FormData(e.target),nid=f.get('id'),
+          n={id:nid||id(),name:f.get('name').trim(),reg:f.get('reg').trim(),phone:f.get('phone').trim(),role:f.get('role').trim(),type:f.get('type')};
+      if(nid) db.nurses=db.nurses.map(x=>x.id===nid?n:x);
+      else db.nurses.push(n);
+      save();
+      this.closeModal();
+      render();
+      toast('Cadastro salvo');
+      return false;
+    },
+
+    removeNurse(nid){
+      let n=db.nurses.find(x=>x.id===nid);
+      if(!n) return;
+      modal('Confirmar Exclusão', `<p>Deseja excluir o(a) enfermeiro(a) <strong>${esc(n.name)}</strong>? As respostas de disponibilidade serão removidas.</p>`, `return app.doRemoveNurse('${nid}')`, 'Excluir');
+    },
+    doRemoveNurse(nid){
+      db.nurses=db.nurses.filter(x=>x.id!==nid);
+      for(let k of Object.keys(db.availability)) if(k.startsWith(nid+':')) delete db.availability[k];
+      save();
+      this.closeModal();
+      render();
+      toast('Profissional excluído');
+      return false;
+    },
+
+    openShift(sid){
+      let s=db.shifts.find(x=>x.id===sid)||{},
+          code='P'+String(db.shifts.reduce((m,x)=>Math.max(m,parseInt(String(x.code||'').slice(1),10)||0),0)+1).padStart(3,'0');
+      modal(sid?'Editar plantão':'Novo plantão',`
+        <input type="hidden" name="id" value="${s.id||''}">
+        <div class="form-row">
+          <div class="field"><label>Código *</label><input name="code" required value="${esc(s.code||code)}" placeholder="P001"></div>
+          <div class="field"><label>Hospital *</label><input name="hospital" required value="${esc(s.hospital||s.unit||'')}" placeholder="Humân"></div>
+        </div>
+        <div class="field"><label>Plantão / turno *</label><input name="name" required maxlength="60" value="${esc(s.name||'')}" placeholder="Diurno ou Noturno"></div>
+        <div class="field"><label>Data *</label><input name="date" type="date" required value="${s.date||''}"></div>
+        <div class="form-row">
+          <div class="field"><label>Horário de início *</label><input name="start" type="time" required value="${s.start||'07:00'}"></div>
+          <div class="field"><label>Vagas *</label><input name="vacancies" type="number" min="1" required value="${s.vacancies||2}"></div>
+        </div>
+        <div class="field"><label>Horário de término *</label><input name="end" type="time" required value="${s.end||'19:00'}"></div>
+        <div class="field"><label>Plantão terceiro / observação</label><input name="thirdShift" value="${esc(s.thirdShift||'')}" placeholder="Ex.: terceiro turno ou orientação"></div>
+      `,`return app.saveShift(event)`,'Salvar plantão');
+    },
+
+    saveShift(e){
+      e.preventDefault();
+      let f=new FormData(e.target),sid=f.get('id'),
+          s={id:sid||id(),code:f.get('code').trim(),name:f.get('name').trim(),date:f.get('date'),start:f.get('start'),end:f.get('end'),hospital:f.get('hospital').trim(),unit:f.get('hospital').trim(),thirdShift:f.get('thirdShift').trim(),vacancies:Math.max(1,Number(f.get('vacancies'))||2)};
+      if(sid) db.shifts=db.shifts.map(x=>x.id===sid?s:x);
+      else db.shifts.push(s);
+      save();
+      this.closeModal();
+      render();
+      toast('Plantão salvo');
+      return false;
+    },
+
+    removeShift(sid){
+      let s=db.shifts.find(x=>x.id===sid);
+      if(!s) return;
+      modal('Confirmar Exclusão', `<p>Deseja excluir o plantão <strong>${esc(s.name)}</strong> (${esc(s.code)})?</p>`, `return app.doRemoveShift('${sid}')`, 'Excluir');
+    },
+    doRemoveShift(sid){
+      db.shifts=db.shifts.filter(x=>x.id!==sid);
+      for(let k of Object.keys(db.availability)) if(k.endsWith(':'+sid)) delete db.availability[k];
+      save();
+      this.closeModal();
+      render();
+      toast('Plantão excluído');
+      return false;
+    },
+    setPlantaoFilterMonth(v){
+      plantaoMonth=v;
+      renderShifts();
+    },
+    removeNurseFromShift(sid,nid){
+      db.availability[`${nid}:${sid}`]='no';
+      let s=db.shifts.find(x=>x.id===sid);
+      if(s){
+        let a=db.nurses.filter(n=>db.availability[`${n.id}:${s.id}`]==='yes'),v=s.vacancies||2;
+        db.rosters[s.id]={assigned:a.slice(0,v).map(n=>n.id),waitlist:a.slice(v).map(n=>n.id),third:[]};
+      }
+      save();
+      render();
+      toast('Profissional removido do plantão');
+    },
+    setAvail(nid,sid,v){
+      db.availability[`${nid}:${sid}`]=v;
+      let s=db.shifts.find(x=>x.id===sid);
+      if(s){
+        let a=db.nurses.filter(n=>db.availability[`${n.id}:${s.id}`]==='yes'),v=s.vacancies||2;
+        db.rosters[s.id]={assigned:a.slice(0,v).map(n=>n.id),waitlist:a.slice(v).map(n=>n.id),third:[]};
+      }
+      save();
+      renderAvailability();
+    },
+    buildAllRosters(){
+      db.rosters=db.rosters||{};
+      db.shifts.forEach(s=>{
+        let a=db.nurses.filter(n=>db.availability[`${n.id}:${s.id}`]==='yes'),v=s.vacancies||2;
+        db.rosters[s.id]={assigned:a.slice(0,v).map(n=>n.id),waitlist:a.slice(v).map(n=>n.id),third:[]};
+      });
+      save();
+      renderAvailability();
+      toast('Escalas atualizadas');
+    },
+
+    availTab(t){ availTab=t; renderAvailability(); },
+    matrixFilter(v){ matrixFilter=v; renderAvailability(); },
+    shiftMonth(n){ month=new Date(month.getFullYear(),month.getMonth()+n,1); renderCalendar(); },
+    goToday(){ month=new Date(new Date().getFullYear(),new Date().getMonth(),1); renderCalendar(); },
+    toggleSidebar(){
+      let appEl=$('.app');
+      let collapsed=appEl.classList.toggle('sidebar-collapsed');
+      try{ localStorage.setItem('escala_sidebar_collapsed',collapsed?'1':'0'); }catch(e){}
+    },
+    openLinkAdminModal(){
+      let hasLink=!!(db.externalLink&&db.externalLink.trim());
+      modal(hasLink?'Gerenciar Link de Acesso':'Incluir Link de Acesso',`
+        <div class="field">
+          <label>Senha de Administrador *</label>
+          <input type="password" id="link-admin-pass" required placeholder="Digite a senha de administrador">
+          <small class="muted" style="margin-top:2px;display:block">Senha padrão de fábrica: <strong>admin123</strong></small>
+        </div>
+        <div class="field">
+          <label>URL do Link de Acesso</label>
+          <input type="url" id="link-admin-url" value="${esc(db.externalLink||'')}" placeholder="https://exemplo.com">
+        </div>
+      `,`return app.submitLinkAdmin(event, false)`,hasLink?'Salvar Alterações':'Salvar Link');
+
+      if(hasLink){
+        setTimeout(()=>{
+          let actions=$('.modal-actions');
+          if(actions && !$('#btn-remove-link')){
+            actions.insertAdjacentHTML('afterbegin',`<button type="button" id="btn-remove-link" class="button" style="border-color:#b85454;color:#b85454;margin-right:auto" onclick="app.submitLinkAdmin(event, true)">Excluir Link</button>`);
+          }
+        },60);
+      }
+    },
+    submitLinkAdmin(e, isRemove){
+      if(e && e.preventDefault) e.preventDefault();
+      let passInput=$('#link-admin-pass');
+      let pass=passInput?passInput.value.trim():'';
+      let expectedPass=db.adminPassword||'admin123';
+
+      if(pass!==expectedPass){
+        toast('Senha de administrador incorreta!');
+        if(passInput){ passInput.focus(); passInput.select(); }
+        return false;
+      }
+
+      if(isRemove){
+        db.externalLink='';
+        save();
+        this.closeModal();
+        render();
+        toast('Link de acesso removido');
+        return false;
+      }
+
+      let urlInput=$('#link-admin-url');
+      let cleanUrl=urlInput?urlInput.value.trim():'';
+      if(cleanUrl && !/^https?:\/\//i.test(cleanUrl)){
+        cleanUrl='https://'+cleanUrl;
+      }
+
+      db.externalLink=cleanUrl;
+      save();
+      this.closeModal();
+      render();
+      toast(cleanUrl?'Link de acesso salvo com sucesso':'Link removido');
+      return false;
+    },
+    copyLink(){
+      if(!db.externalLink) return;
+      let t=document.createElement('textarea');
+      t.value=db.externalLink;
+      t.style.position='fixed';
+      t.style.opacity='0';
+      document.body.appendChild(t);
+      t.select();
+      try{
+        document.execCommand('copy');
+        toast('Link copiado para a área de transferência!');
+      }catch{
+        toast('Não foi possível copiar o link.');
+      }
+      document.body.removeChild(t);
+    },
+    updateLinkUI(){
+      let box=$('#sidebar-link-box');
+      if(!box) return;
+      let hasLink=!!(db.externalLink&&db.externalLink.trim());
+      if(hasLink){
+        box.innerHTML=`
+          <div class="side-link-title">Acesso Forms Disponibilidade</div>
+          <a href="${esc(db.externalLink)}" target="_blank" rel="noopener noreferrer" class="side-link-btn" title="${esc(db.externalLink)}">
+            <span>Abrir link</span>
+            <span class="icon">↗</span>
+          </a>
+          <button type="button" class="side-link-btn secondary" onclick="app.copyLink()" title="Copiar link para a área de transferência">
+            <span>Copiar link</span>
+            <span class="icon">📋</span>
+          </button>
+          <button type="button" class="side-link-manage-btn" onclick="app.openLinkAdminModal()">
+            <span>⚙ Alterar / Remover (Adm)</span>
+          </button>`;
+      } else {
+        box.innerHTML=`
+          <div class="side-link-title">Acesso Forms Disponibilidade</div>
+          <button type="button" class="side-link-manage-btn" onclick="app.openLinkAdminModal()">
+            <span>＋ Incluir link (Adm)</span>
+          </button>`;
+      }
+    },
+    printCalendar(){ window.print(); },
+
+    exportCalendarPdf(){
+      let bytes=makeCalendarPdf(),
+          year=month.getFullYear(),
+          mon=String(month.getMonth()+1).padStart(2,'0');
+      download(new Blob([bytes],{type:'application/pdf'}),'calendario-'+year+'-'+mon+'.pdf');
+      toast('PDF gerado com sucesso!');
+    },
+
+    closeModal(){ $('#modal-root').innerHTML=''; },
+
+    exportData(){
+      let blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
+      download(blob,'escala-clara-dados.json');
+      toast('Backup JSON exportado!');
+    },
+
+    importData(input){
+      let file=input.files?.[0];
+      if(!file) return;
+      let r=new FileReader();
+      r.onload=()=>{
+        try{
+          let x=JSON.parse(r.result);
+          if(!Array.isArray(x.nurses)||!Array.isArray(x.shifts)||typeof x.availability!=='object') throw 0;
+          x.rosters=x.rosters||{};
+          x.manualEntries=x.manualEntries||[];
+          x.shifts.forEach((s,i)=>{
+            s.code=s.code||('P'+String(i+1).padStart(3,'0'));
+            s.hospital=s.hospital||s.unit||'';
+            s.vacancies=Number(s.vacancies||2);
+          });
+          db={nurses:x.nurses,shifts:x.shifts,availability:x.availability,rosters:x.rosters,manualEntries:x.manualEntries||[]};
+          save();
+          render();
+          toast('Dados importados com sucesso');
+        }catch{
+          toast('Arquivo JSON inválido.');
+        }
+      };
+      r.readAsText(file);
+    },
+
+    exportCalendar(){
+      let rows=[['Código','Plantão','Data','Horário','Hospital','Vagas','Escalados','Fila de espera','Plantão terceiro']];
+      [...db.shifts].sort((a,b)=>a.date.localeCompare(b.date)).forEach(s=>{
+        let r=db.rosters?.[s.id]||{},
+            names=ids=>(ids||[]).map(x=>db.nurses.find(n=>n.id===x)?.name).filter(Boolean).join('; ');
+        rows.push([s.code,s.name,s.date,`${s.start}-${s.end}`,s.hospital||s.unit||'',s.vacancies||2,names(r.assigned),names(r.waitlist),s.thirdShift||'']);
+      });
+      let csv='\ufeff'+rows.map(row=>row.map(x=>'"'+String(x).replaceAll('"','""')+'"').join(';')).join('\r\n');
+      download(new Blob([csv],{type:'text/csv;charset=utf-8'}),'calendario-plantões.csv');
+      toast('Escala CSV exportada!');
+    },
+
+    resetDemo(){
+      modal('Carregar Exemplo', '<p>Deseja carregar o exemplo? Isso substituirá os dados atuais.</p>', 'return app.doResetDemo()', 'Carregar');
+    },
+    doResetDemo(){
+      let n1={id:id(),name:'Mariana Costa',reg:'COREN-SP 123456',phone:'(11) 99999-1111',role:'Enfermeira',type:'Efetivo'},
+          n2={id:id(),name:'Rafael Mendes',reg:'COREN-SP 234567',phone:'(11) 98888-2222',role:'Enfermeiro',type:'Efetivo'},
+          n3={id:id(),name:'Camila Oliveira',reg:'COREN-SP 345678',phone:'(11) 97777-3333',role:'Enfermeira',type:'Temporário'},
+          d=new Date(),
+          date=(offset)=>{let x=new Date(d.getFullYear(),d.getMonth(),d.getDate()+offset);return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`;},
+          s1={id:id(),code:'P001',name:'Diurno',date:date(1),start:'07:00',end:'19:00',hospital:'Humân',unit:'Humân',vacancies:2},
+          s2={id:id(),code:'P002',name:'Noturno',date:date(1),start:'19:00',end:'07:00',hospital:'Humân',unit:'Humân',vacancies:2},
+          s3={id:id(),code:'P003',name:'Diurno',date:date(2),start:'07:00',end:'19:00',hospital:'Hospital Central',unit:'Hospital Central',vacancies:2};
+
+      db={
+        nurses:[n1,n2,n3],
+        shifts:[s1,s2,s3],
+        availability:{
+          [`${n1.id}:${s1.id}`]:'yes',
+          [`${n2.id}:${s1.id}`]:'no',
+          [`${n3.id}:${s1.id}`]:'yes',
+          [`${n1.id}:${s2.id}`]:'no',
+          [`${n2.id}:${s2.id}`]:'yes',
+          [`${n3.id}:${s2.id}`]:'yes',
+          [`${n1.id}:${s3.id}`]:'yes',
+          [`${n2.id}:${s3.id}`]:'yes'
+        },
+        rosters:{},
+        manualEntries:[],
+        externalLink:db.externalLink||DEFAULT_LINK,
+        adminPassword:db.adminPassword||'admin123'
+      };
+
+      db.shifts.forEach(s=>{
+        let a=db.nurses.filter(n=>db.availability[`${n.id}:${s.id}`]==='yes'),v=s.vacancies||2;
+        db.rosters[s.id]={assigned:a.slice(0,v).map(n=>n.id),waitlist:a.slice(v).map(n=>n.id),third:[]};
+      });
+
+      save();
+      this.closeModal();
+      render();
+      toast('Exemplo carregado');
+      return false;
+    }
+  };
+
+  function download(blob,name){
+    let a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download=name;
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  }
+
+  if(localStorage.getItem('escala_sidebar_collapsed')==='1'){
+    document.querySelector('.app')?.classList.add('sidebar-collapsed');
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>
