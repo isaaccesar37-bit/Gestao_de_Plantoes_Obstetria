@@ -66,6 +66,9 @@ button{cursor:pointer}
 .card-head{padding:18px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px}
 .card-head h2{margin:0;font-size:16px}
 .card-head small{color:var(--muted)}
+.data-transfer-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.data-transfer-body{padding:18px 20px;display:grid;gap:14px;align-content:start}
+.data-transfer-body p{margin:0;color:var(--muted);font-size:13px}
 .table-wrap{overflow:auto}
 table{border-collapse:collapse;width:100%;min-width:600px}
 th{text-align:left;padding:12px 18px;font-size:10px;color:var(--muted);letter-spacing:.9px;text-transform:uppercase;background:#fbfcfc;white-space:nowrap}
@@ -234,6 +237,7 @@ td strong{font-size:13px}
 .monthly-tools input{min-height:39px}
 @media(max-width:900px){.monthly-tools{grid-template-columns:1fr 1fr}.monthly-create{grid-column:1/-1}}
 @media(max-width:580px){.monthly-tools{grid-template-columns:1fr}.monthly-create{grid-column:auto}}
+@media(max-width:700px){.data-transfer-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -261,6 +265,7 @@ td strong{font-size:13px}
         <button data-page="disponibilidade"><span class="icon">☑</span><span class="label">Disponibilidade</span></button>
         <button data-page="manual"><span class="icon">✎</span><span class="label">Inserir/Importar dados</span></button>
         <button data-page="calendario"><span class="icon">▦</span><span class="label">Calendário</span></button>
+        <button data-page="dados"><span class="icon">⇅</span><span class="label">Importar e Exportar Dados</span></button>
       </nav>
     </div>
     <div class="side-link-box" id="sidebar-link-box">
@@ -339,6 +344,17 @@ td strong{font-size:13px}
     }
   }
 
+  function saveManualDraft(){
+    if(page!=='manual') return;
+    db.manualEntries=[...document.querySelectorAll('.manual-table tbody tr')].map(tr=>({
+      name:tr.querySelector('.manual-name')?.value.trim()||'',
+      available:tr.querySelector('.manual-available')?.value||'yes',
+      shiftText:tr.querySelector('.manual-shifts-text')?.value.trim()||''
+    }));
+    db.manualPasteDraft=$('#manual-paste')?.value||'';
+    save();
+  }
+
   function updateSaveBadge(msg,type){
     const el=$('#save-status');
     if(!el) return;
@@ -382,7 +398,7 @@ td strong{font-size:13px}
     if(p==='calendario') focusCalendarMonth();
     page=p;
     document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===p));
-    $('#crumb').textContent={equipe:'Enfermeiros',plantao:'Plantões',disponibilidade:'Disponibilidade',calendario:'Calendário',manual:'Inserir/Importar dados'}[p];
+    $('#crumb').textContent={equipe:'Enfermeiros',plantao:'Plantões',disponibilidade:'Disponibilidade',calendario:'Calendário',manual:'Inserir/Importar dados',dados:'Importar e Exportar Dados'}[p];
     render();
   }
 
@@ -395,6 +411,7 @@ td strong{font-size:13px}
     if(page==='disponibilidade') renderAvailability();
     if(page==='manual') renderManual();
     if(page==='calendario') renderCalendar();
+    if(page==='dados') renderDataTransfer();
     setTimeout(()=>app.updateLinkUI(), 10);
   }
 
@@ -554,7 +571,7 @@ td strong{font-size:13px}
       <datalist id="nurse-options">${(db.nurses||[]).map(n=>`<option value="${esc(n.name||'')}"></option>`).join('')}</datalist>
       <div class="paste-panel">
         <label for="manual-paste"><strong>Cole aqui as três colunas copiadas da planilha</strong><span>Inclua o cabeçalho se quiser; ele será ignorado na importação.</span></label>
-        <textarea id="manual-paste" rows="5" placeholder="Nome do enfermeiro[TAB]Disponível?[TAB]Plantões disponíveis"></textarea>
+        <textarea id="manual-paste" rows="5" placeholder="Nome do enfermeiro[TAB]Disponível?[TAB]Plantões disponíveis">${esc(db.manualPasteDraft||'')}</textarea>
         <button class="button primary" onclick="app.importManualPaste()">Importar linhas coladas</button>
       </div>
       <div class="table-wrap">
@@ -572,6 +589,13 @@ td strong{font-size:13px}
       </div>
     </div>`;
   }
+
+  $('#view').addEventListener('input',e=>{
+    if(e.target.matches('.manual-name,.manual-available,.manual-shifts-text,#manual-paste')) saveManualDraft();
+  });
+  $('#view').addEventListener('change',e=>{
+    if(e.target.matches('.manual-name,.manual-available,.manual-shifts-text,#manual-paste')) saveManualDraft();
+  });
 
   function renderCalendar(){
     $('#view').innerHTML=header('Calendário de plantões','Visualize a escala mensal por dia, com escalados, substitutos e hospital.',`<div style="display:flex;gap:8px"><button class="button" onclick="app.exportCalendar()">⇩ Exportar escala (CSV)</button><button class="button primary" onclick="app.exportCalendarPdf()">▣ Exportar calendário (PDF)</button></div>`)+stats()+`
@@ -594,6 +618,24 @@ td strong{font-size:13px}
       </div>
     </div>
     <p class="muted" style="margin:12px 2px">A montagem inicial segue a ordem de cadastro e o número de vagas. Revise a escala antes de publicá-la.</p>`;
+  }
+
+  function renderDataTransfer(){
+    $('#view').innerHTML=header('Importar e Exportar Dados','Faça uma cópia de segurança completa ou restaure os dados do aplicativo.')+
+      `<div class="data-transfer-grid">
+        <section class="card">
+          <div class="card-head"><div><h2>Exportar dados</h2><p>Baixe uma cópia completa em formato JSON.</p></div></div>
+          <div class="data-transfer-body"><p>O arquivo inclui enfermeiros, plantões, disponibilidades, escalas e linhas importadas.</p>
+            <button class="button primary" type="button" onclick="app.exportData()">⇩ Exportar cópia dos dados</button>
+          </div>
+        </section>
+        <section class="card">
+          <div class="card-head"><div><h2>Importar dados</h2><p>Restaure uma cópia JSON salva anteriormente.</p></div></div>
+          <div class="data-transfer-body"><p>A importação substitui os dados atuais do aplicativo. Selecione um arquivo JSON exportado por este sistema.</p>
+            <label class="button import-label">⇧ Selecionar cópia JSON<input type="file" accept="application/json,.json" class="hidden" onchange="app.importData(this)"></label>
+          </div>
+        </section>
+      </div>`;
   }
 
   function calendarCells(){
@@ -818,6 +860,7 @@ td strong{font-size:13px}
 
       document.querySelector('.manual-table tbody').innerHTML=(rows.length?rows:[{}]).map(manualRowHtml).join('');
       box.value='';
+      saveManualDraft();
       toast(`${rows.length} linha(s) importada(s)`);
     },
 
@@ -825,6 +868,7 @@ td strong{font-size:13px}
       let body=document.querySelector('.manual-table tbody'),row=button.closest('tr');
       if(row) row.remove();
       if(!body.children.length) body.insertAdjacentHTML('beforeend',manualRowHtml());
+      saveManualDraft();
     },
 
     saveManual(){
@@ -866,6 +910,7 @@ td strong{font-size:13px}
       }
 
       db.manualEntries=rows;
+      db.manualPasteDraft='';
       for(let row of rows){
         let nurse=db.nurses.find(n=>(n.name||'').trim().toLocaleLowerCase('pt-BR')===row.name.toLocaleLowerCase('pt-BR'));
         if(!nurse){
