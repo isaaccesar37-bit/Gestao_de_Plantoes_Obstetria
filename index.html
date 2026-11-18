@@ -3,13 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#087f78">
+<meta name="theme-color" content="#086a9d">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Gestão de plantões">
+<meta name="apple-mobile-web-app-title" content="Plantão+">
+<link rel="icon" type="image/png" href="./icons/brand-mark.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./icons/icon-192.png">
-<title>Gestão de plantões</title>
+<title>PLANTÃO+ | Gestão de plantões</title>
 <style>
 :root{--ink:#172c3a;--muted:#71818b;--line:#e5eceb;--paper:#f5f8f7;--white:#fff;--teal:#087f78;--teal2:#e5f5f2;--navy:#143543;--gold:#e5a840;--red:#b85454;--shadow:0 12px 35px #183b4610}
 *{box-sizing:border-box}
@@ -20,8 +21,11 @@ button{cursor:pointer}
 .sidebar{background:var(--navy);color:#ecf5f4;padding:27px 18px;display:flex;flex-direction:column;gap:32px}
 .brand{display:flex;align-items:center;gap:12px;padding:0 8px}
 .logo{height:52px;width:52px;border-radius:14px;background:#35b5a5;display:grid;place-items:center;color:#fff;font-weight:800;font-size:18px;flex-shrink:0}
+.logo-image{display:block;object-fit:cover;padding:0;background:transparent}
 .brand strong{display:block;font-size:16px;letter-spacing:.2px}
 .brand small{color:#a9c1c7;font-size:11px}
+.brand-plus{color:#20bd7a}
+.brand-text small{display:block;color:#a9c1c7;font-size:10px;letter-spacing:.1px}
 
 .sidebar-toggle-btn{border:0;background:rgba(255,255,255,.1);color:#b6cbd0;width:30px;height:30px;border-radius:8px;display:grid;place-items:center;margin-left:auto;cursor:pointer;flex-shrink:0;transition:all .2s}
 .sidebar-toggle-btn:hover{background:rgba(255,255,255,.2);color:#fff}
@@ -324,7 +328,7 @@ body.authenticated .login-screen,body.offline-mode .login-screen{display:none}
 .login-card{width:min(100%,440px);background:#fff;border:1px solid var(--line);border-radius:20px;padding:34px;box-shadow:0 24px 70px #183b461c}
 .login-brand{display:flex;align-items:center;gap:13px;margin-bottom:28px}
 .login-brand .logo{height:48px;width:48px}
-.login-brand strong{display:block;font-size:17px}.login-brand small{color:var(--muted);font-size:12px}
+.login-brand strong{display:block;font-size:20px;letter-spacing:.45px}.login-brand small{display:block;color:var(--muted);font-size:11px;margin-top:2px}
 .login-card h1{font-size:25px;letter-spacing:-.5px;margin:0 0 6px}
 .login-subtitle{font-size:13px;color:var(--muted);margin:0 0 24px}
 .login-field{display:grid;gap:6px;margin:15px 0}
@@ -366,7 +370,7 @@ body.authenticated .login-screen,body.offline-mode .login-screen{display:none}
 <body>
 <section class="login-screen" id="login-screen" aria-label="Acesso à Gestão de plantões">
   <div class="login-card">
-    <div class="login-brand"><div class="logo" aria-hidden="true">GP</div><div><strong>Gestão de plantões</strong></div></div>
+    <div class="login-brand"><img class="logo logo-image" src="./icons/brand-mark.png" alt=""><div><strong>PLANTÃO<span class="brand-plus">+</span></strong><small>Gestão Inteligente de Turnos</small></div></div>
     <h1 id="login-title">Acesse sua conta</h1>
     <p class="login-subtitle" id="login-subtitle">Entre com seu e-mail e senha para continuar.</p>
     <form id="login-form" onsubmit="return authUI.signIn(event)">
@@ -386,15 +390,8 @@ body.authenticated .login-screen,body.offline-mode .login-screen{display:none}
 <div class="app">
   <aside class="sidebar">
     <div class="brand">
-      <div class="logo" title="Calendário de plantões">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-          <line x1="16" y1="2" x2="16" y2="6"></line>
-          <line x1="8" y1="2" x2="8" y2="6"></line>
-          <line x1="3" y1="10" x2="21" y2="10"></line>
-        </svg>
-      </div>
-      <div class="brand-text"><strong>Gestão de plantões</strong><small>Obstetrícia</small></div>
+      <img class="logo logo-image" title="PLANTÃO+ — Gestão de plantões" src="./icons/brand-mark.png" alt="">
+      <div class="brand-text"><strong>PLANTÃO<span class="brand-plus">+</span></strong><small>Gestão de plantões</small></div>
       <button class="sidebar-toggle-btn" onclick="app.toggleSidebar()" title="Recolher / Expandir menu" aria-label="Expandir ou recolher menu">
         <span class="toggle-icon">‹</span>
       </button>

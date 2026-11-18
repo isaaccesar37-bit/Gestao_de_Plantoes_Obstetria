@@ -1,15 +1,15 @@
 {
   "id": "./",
-  "name": "Gestão de plantões",
-  "short_name": "Plantões",
-  "description": "Organize a gestão de plantões de obstetrícia.",
+  "name": "PLANTÃO+ | Gestão de plantões",
+  "short_name": "Plantão+",
+  "description": "Gestão inteligente de turnos e plantões.",
   "lang": "pt-BR",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
   "background_color": "#f5f8f7",
-  "theme_color": "#087f78",
+  "theme_color": "#086a9d",
   "icons": [
     {
       "src": "./icons/icon-192.png",
