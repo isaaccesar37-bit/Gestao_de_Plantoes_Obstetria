@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Escala Clara | Gestão de plantões</title>
+<title>Gestão de plantões</title>
 <style>
 :root{--ink:#172c3a;--muted:#71818b;--line:#e5eceb;--paper:#f5f8f7;--white:#fff;--teal:#087f78;--teal2:#e5f5f2;--navy:#143543;--gold:#e5a840;--red:#b85454;--shadow:0 12px 35px #183b4610}
 *{box-sizing:border-box}
@@ -302,9 +302,9 @@ td strong{font-size:13px}
 }
 
 /* Acesso local e tela de entrada */
-body:not(.authenticated)>.app{visibility:hidden}
+body:not(.authenticated):not(.local-admin)>.app{visibility:hidden}
 .login-screen{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:24px;background:radial-gradient(ellipse at 15% 15%,#dff3ef 0,transparent 38%),linear-gradient(135deg,#f5f8f7,#eaf2f1)}
-body.authenticated .login-screen{display:none}
+body.authenticated .login-screen,body.local-admin .login-screen{display:none}
 .login-card{width:min(100%,440px);background:#fff;border:1px solid var(--line);border-radius:20px;padding:34px;box-shadow:0 24px 70px #183b461c}
 .login-brand{display:flex;align-items:center;gap:13px;margin-bottom:28px}
 .login-brand .logo{height:48px;width:48px}
@@ -320,6 +320,7 @@ body.authenticated .login-screen{display:none}
 .login-separator{display:flex;align-items:center;gap:12px;margin:23px 0;color:#93a2a6;font-size:11px}
 .login-separator:before,.login-separator:after{content:"";height:1px;background:var(--line);flex:1}
 .login-local{width:100%;padding:11px;border:1px solid #cbd9d7;border-radius:9px;background:#f7faf9;color:#29464e;font-weight:650}
+.login-local[hidden]{display:none}
 .login-note{margin:15px 0 0;text-align:center;color:#859397;font-size:11px;line-height:1.5}
 .login-feedback{min-height:18px;margin:10px 0 0;color:#a94f4f;font-size:12px;text-align:center}
 .login-logout{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 10px;color:#52656c;font-size:12px;font-weight:600}
@@ -327,7 +328,7 @@ body.authenticated .login-screen{display:none}
 </style>
 </head>
 <body>
-<section class="login-screen" id="login-screen" aria-label="Acesso à Escala Clara">
+<section class="login-screen" id="login-screen" aria-label="Acesso à Gestão de plantões">
   <div class="login-card">
     <div class="login-brand"><div class="logo" aria-hidden="true">GP</div><div><strong>Gestão de plantões</strong></div></div>
     <h1 id="login-title">Acesse sua conta</h1>
@@ -340,8 +341,8 @@ body.authenticated .login-screen{display:none}
     <button class="login-forgot" id="forgot-button" type="button" onclick="authUI.showForgot()">Esqueci a senha</button>
     <div class="login-feedback" id="login-feedback" aria-live="polite"></div>
     <div class="login-separator"><span>ou</span></div>
-    <button class="login-local" type="button" onclick="authUI.enterLocalAdmin()">Acessar como administrador local</button>
-    <p class="login-note">Acesso local neste navegador. O login por e-mail será ativado após a integração com o Firebase.</p>
+    <button class="login-local" id="login-local-admin" type="button" onclick="authUI.enterLocalAdmin()" hidden>Acessar como administrador local</button>
+    <p class="login-note" id="login-note">Acesso restrito a usuários cadastrados.</p>
   </div>
 </section>
 <div class="app">
@@ -390,25 +391,85 @@ body.authenticated .login-screen{display:none}
 <div id="modal-root"></div>
 <div id="toast-root"></div>
 
+<script src="https://www.gstatic.com/firebasejs/13.0.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/13.0.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore-compat.js"></script>
 <script>
+window.firebaseReady=false;
+try{
+  if(typeof firebase!=='undefined'){
+    firebase.initializeApp({
+      apiKey:'AIzaSyBF6hqg5T0zC_r5U0c8kwT5e7K88j1zWs',
+      authDomain:'gestao-de-plantoes-f7a07.firebaseapp.com',
+      projectId:'gestao-de-plantoes-f7a07',
+      appId:'1:425208993087:web:4ebe7f04e91264ab866f8a'
+    });
+    window.firebaseAuth=firebase.auth();
+    window.firebaseCloudDb=firebase.firestore();
+    window.firebaseReady=true;
+  }
+}catch(error){console.error('Não foi possível iniciar o Firebase.',error)}
+
+const localAdminButton=document.querySelector('#login-local-admin');
+if(location.protocol==='file:'){
+  localAdminButton.hidden=false;
+  document.querySelector('#login-note').textContent='Atalho local de desenvolvimento. Os dados ficam neste navegador.';
+  if(sessionStorage.getItem('escala-clara-local-admin')==='1')document.body.classList.add('local-admin');
+}
+
+function authErrorMessage(error){
+  const messages={
+    'auth/invalid-email':'Confira o formato do e-mail.',
+    'auth/invalid-credential':'E-mail ou senha incorretos.',
+    'auth/user-not-found':'E-mail ou senha incorretos.',
+    'auth/wrong-password':'E-mail ou senha incorretos.',
+    'auth/too-many-requests':'Muitas tentativas. Aguarde alguns minutos e tente novamente.',
+    'auth/network-request-failed':'Sem conexão com a internet. Verifique a conexão e tente novamente.',
+    'auth/operation-not-allowed':'O login por e-mail e senha não está habilitado no Firebase.'
+  };
+  return messages[error?.code]||'Não foi possível concluir. Confira os dados e tente novamente.';
+}
+
 window.authUI={
-  signIn(event){event.preventDefault();document.querySelector('#login-feedback').textContent='O login por e-mail será habilitado quando conectarmos o Firebase Authentication.';return false},
+  async signIn(event){
+    event.preventDefault();
+    const feedback=document.querySelector('#login-feedback'),button=document.querySelector('#login-form .login-submit');
+    if(!window.firebaseReady){feedback.textContent='Não foi possível carregar o Firebase. Atualize a página e tente novamente.';return false}
+    feedback.textContent='';button.disabled=true;
+    try{
+      await window.firebaseAuth.signInWithEmailAndPassword(document.querySelector('#login-email').value.trim(),document.querySelector('#login-password').value);
+    }catch(error){feedback.textContent=authErrorMessage(error)}
+    finally{button.disabled=false}
+    return false;
+  },
   showForgot(){
     const title=document.querySelector('#login-title'),sub=document.querySelector('#login-subtitle'),form=document.querySelector('#login-form'),forgot=document.querySelector('#forgot-button'),feedback=document.querySelector('#login-feedback');
     title.textContent='Recuperar senha';sub.textContent='Informe o e-mail da sua conta para receber as instruções.';
     form.innerHTML='<div class="login-field"><label for="reset-email">E-mail</label><input id="reset-email" type="email" autocomplete="email" placeholder="voce@exemplo.com" required></div><button class="login-submit" type="submit">Enviar instruções</button>';
-    form.onsubmit=(event)=>{event.preventDefault();feedback.textContent='A recuperação por e-mail será ativada após a configuração do Firebase.';return false};
+    form.onsubmit=async(event)=>{
+      event.preventDefault();
+      if(!window.firebaseReady){feedback.textContent='Não foi possível carregar o Firebase. Atualize a página e tente novamente.';return false}
+      try{await window.firebaseAuth.sendPasswordResetEmail(document.querySelector('#reset-email').value.trim());feedback.style.color='#087f78';feedback.textContent='Se o e-mail estiver cadastrado, você receberá as instruções de recuperação.'}
+      catch(error){feedback.style.color='#a94f4f';feedback.textContent=authErrorMessage(error)}
+      return false;
+    };
     forgot.textContent='Voltar ao login';forgot.onclick=()=>location.reload();feedback.textContent='';
   },
-  enterLocalAdmin(){sessionStorage.setItem('escala-clara-local-admin','1');document.body.classList.add('authenticated')},
-  logout(){sessionStorage.removeItem('escala-clara-local-admin');document.body.classList.remove('authenticated');location.reload()}
+  enterLocalAdmin(){if(location.protocol!=='file:')return;sessionStorage.setItem('escala-clara-local-admin','1');document.body.classList.add('local-admin')},
+  async logout(){
+    if(location.protocol==='file:')sessionStorage.removeItem('escala-clara-local-admin');
+    try{if(window.firebaseAuth)await window.firebaseAuth.signOut()}catch(error){console.error('Falha ao sair.',error)}
+    document.body.classList.remove('authenticated','local-admin');location.reload();
+  }
 };
-if(sessionStorage.getItem('escala-clara-local-admin')==='1')document.body.classList.add('authenticated');
 (()=>{
   'use strict';
   const KEY='escala-clara-v1';
   const DEFAULT_LINK='https://docs.google.com/forms/d/e/1FAIpQLScdKzwGGrK8FA7Ubb-Sg3xEmmJUKFbB0P0v9ly6w0WHknD27Q/viewform?usp=dialog';
   let db=load(),
+      cloudUser=null,
+      cloudDataReady=false,
+      cloudSaveTimer=null,
       page='manual',
       month=new Date(new Date().getFullYear(),new Date().getMonth(),1),
       calendarMode='escalados',
@@ -421,41 +482,58 @@ if(sessionStorage.getItem('escala-clara-local-admin')==='1')document.body.classL
   const $=s=>document.querySelector(s),
         esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
+  function normalizeDb(x){
+    x=x&&typeof x==='object'?x:{};
+    x.nurses=Array.isArray(x.nurses)?x.nurses:[];
+    x.shifts=Array.isArray(x.shifts)?x.shifts:[];
+    x.availability=x.availability&&typeof x.availability==='object'?x.availability:{};
+    x.rosters=x.rosters&&typeof x.rosters==='object'?x.rosters:{};
+    x.manualEntries=Array.isArray(x.manualEntries)?x.manualEntries:[];
+    if(!x.externalLink||x.externalLink==='https://forms.google.com'||x.externalLink.includes('1FAIpQLScgV3081gzDz5Ff24UJjRFN3K7UfPLrtTU-rmIZjs4o8DPXEQ'))x.externalLink=DEFAULT_LINK;
+    x.adminPassword=x.adminPassword||'admin123';
+    x.shifts.forEach((s,i)=>{s.code=s.code||('P'+String(i+1).padStart(3,'0'));s.hospital=s.hospital||s.unit||'';s.vacancies=Number(s.vacancies||2)});
+    return x;
+  }
+
   function load(){
     try{
       let raw=localStorage.getItem(KEY)||sessionStorage.getItem(KEY);
-      let x=JSON.parse(raw)||{};
-      x.nurses=x.nurses||[];
-      x.shifts=x.shifts||[];
-      x.availability=x.availability||{};
-      x.rosters=x.rosters||{};
-      x.manualEntries=x.manualEntries||[];
-      if(!x.externalLink || x.externalLink==='https://forms.google.com' || x.externalLink.includes('1FAIpQLScgV3081gzDz5Ff24UJjRFN3K7UfPLrtTU-rmIZjs4o8DPXEQ')){
-        x.externalLink=DEFAULT_LINK;
-      }
-      x.adminPassword=x.adminPassword||'admin123';
-      x.shifts.forEach((s,i)=>{
-        s.code=s.code||('P'+String(i+1).padStart(3,'0'));
-        s.hospital=s.hospital||s.unit||'';
-        s.vacancies=Number(s.vacancies||2);
-      });
-      return x;
+      return normalizeDb(JSON.parse(raw)||{});
     }catch{
-      return{nurses:[],shifts:[],availability:{},rosters:{},manualEntries:[],externalLink:DEFAULT_LINK,adminPassword:'admin123'};
+      return normalizeDb({externalLink:DEFAULT_LINK});
     }
   }
 
   function save(){
+    let savedLocally=false;
     try{
       localStorage.setItem(KEY,JSON.stringify(db));
-      updateSaveBadge('Salvo no navegador','teal');
+      savedLocally=true;
     }catch(e){
       try{
         sessionStorage.setItem(KEY,JSON.stringify(db));
-        updateSaveBadge('Salvo (sessão)','gold');
+        savedLocally=true;
       }catch(err){
         updateSaveBadge('Erro ao salvar no cache','red');
       }
+    }
+    if(cloudUser&&cloudDataReady&&window.firebaseCloudDb){
+      clearTimeout(cloudSaveTimer);
+      updateSaveBadge('Sincronizando com Firebase…','gold');
+      cloudSaveTimer=setTimeout(async()=>{
+        try{
+          const payload=JSON.stringify(db);
+          if(new Blob([payload]).size>900000)throw new Error('O conjunto de dados ultrapassou o limite seguro para sincronização.');
+          await window.firebaseCloudDb.collection('appData').doc('escalaClara').set({payload,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+          updateSaveBadge('Salvo no Firebase','teal');
+        }catch(error){
+          console.error('Falha ao sincronizar com o Firestore.',error);
+          updateSaveBadge('Falha ao salvar no Firebase','red');
+          toast('Não foi possível sincronizar os dados com o Firebase.');
+        }
+      },700);
+    }else if(savedLocally){
+      updateSaveBadge('Salvo no navegador','teal');
     }
   }
 
@@ -1406,6 +1484,37 @@ if(sessionStorage.getItem('escala-clara-local-admin')==='1')document.body.classL
   }
 
   render();
+
+  if(window.firebaseReady){
+    window.firebaseAuth.onAuthStateChanged(async user=>{
+      cloudUser=user||null;
+      cloudDataReady=false;
+      if(!user){document.body.classList.remove('authenticated');return}
+      const docRef=window.firebaseCloudDb.collection('appData').doc('escalaClara');
+      try{
+        const snapshot=await docRef.get();
+        if(snapshot.exists&&typeof snapshot.data().payload==='string'){
+          db=normalizeDb(JSON.parse(snapshot.data().payload));
+        }else if(!snapshot.exists){
+          const payload=JSON.stringify(db);
+          await docRef.set({payload,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+        }
+        cloudDataReady=true;
+        document.body.classList.add('authenticated');
+        updateSaveBadge('Conectado ao Firebase','teal');
+        render();
+      }catch(error){
+        console.error('Não foi possível carregar os dados do Firestore.',error);
+        cloudUser=null;
+        document.body.classList.remove('authenticated');
+        const feedback=$('#login-feedback');
+        feedback.textContent='Login aceito, mas o banco não liberou o acesso. Verifique se as regras do Firestore estão publicadas para esta conta.';
+        await window.firebaseAuth.signOut().catch(()=>{});
+      }
+    });
+  }else{
+    $('#login-feedback').textContent='Não foi possível carregar o Firebase. Verifique sua conexão e atualize a página.';
+  }
 })();
 </script>
 </body>
