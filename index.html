@@ -300,9 +300,50 @@ td strong{font-size:13px}
   .overlay{padding:12px}
   .toast{width:max-content;max-width:calc(100vw - 24px);text-align:center}
 }
+
+/* Acesso local e tela de entrada */
+body:not(.authenticated)>.app{visibility:hidden}
+.login-screen{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:24px;background:radial-gradient(ellipse at 15% 15%,#dff3ef 0,transparent 38%),linear-gradient(135deg,#f5f8f7,#eaf2f1)}
+body.authenticated .login-screen{display:none}
+.login-card{width:min(100%,440px);background:#fff;border:1px solid var(--line);border-radius:20px;padding:34px;box-shadow:0 24px 70px #183b461c}
+.login-brand{display:flex;align-items:center;gap:13px;margin-bottom:28px}
+.login-brand .logo{height:48px;width:48px}
+.login-brand strong{display:block;font-size:17px}.login-brand small{color:var(--muted);font-size:12px}
+.login-card h1{font-size:25px;letter-spacing:-.5px;margin:0 0 6px}
+.login-subtitle{font-size:13px;color:var(--muted);margin:0 0 24px}
+.login-field{display:grid;gap:6px;margin:15px 0}
+.login-field label{font-size:12px;font-weight:650;color:#40545c}
+.login-field input{width:100%;border:1px solid #dce6e4;border-radius:9px;padding:12px 13px;color:var(--ink);outline:none}
+.login-field input:focus{border-color:var(--teal);box-shadow:0 0 0 3px #087f7818}
+.login-submit{width:100%;margin-top:5px;padding:12px;border:0;border-radius:9px;background:var(--teal);color:#fff;font-weight:700}
+.login-forgot{display:block;margin:15px auto 0;background:none;border:0;color:var(--teal);font-size:13px;font-weight:650}
+.login-separator{display:flex;align-items:center;gap:12px;margin:23px 0;color:#93a2a6;font-size:11px}
+.login-separator:before,.login-separator:after{content:"";height:1px;background:var(--line);flex:1}
+.login-local{width:100%;padding:11px;border:1px solid #cbd9d7;border-radius:9px;background:#f7faf9;color:#29464e;font-weight:650}
+.login-note{margin:15px 0 0;text-align:center;color:#859397;font-size:11px;line-height:1.5}
+.login-feedback{min-height:18px;margin:10px 0 0;color:#a94f4f;font-size:12px;text-align:center}
+.login-logout{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 10px;color:#52656c;font-size:12px;font-weight:600}
+@media(max-width:520px){.login-card{padding:26px 22px}.topbar{padding:0 16px}.login-screen{padding:16px}}
 </style>
 </head>
 <body>
+<section class="login-screen" id="login-screen" aria-label="Acesso à Escala Clara">
+  <div class="login-card">
+    <div class="login-brand"><div class="logo" aria-hidden="true">GP</div><div><strong>Gestão de plantões</strong></div></div>
+    <h1 id="login-title">Acesse sua conta</h1>
+    <p class="login-subtitle" id="login-subtitle">Entre com seu e-mail e senha para continuar.</p>
+    <form id="login-form" onsubmit="return authUI.signIn(event)">
+      <div class="login-field"><label for="login-email">E-mail</label><input id="login-email" type="email" autocomplete="username" placeholder="voce@exemplo.com" required></div>
+      <div class="login-field"><label for="login-password">Senha</label><input id="login-password" type="password" autocomplete="current-password" placeholder="Sua senha" required></div>
+      <button class="login-submit" type="submit">Entrar</button>
+    </form>
+    <button class="login-forgot" id="forgot-button" type="button" onclick="authUI.showForgot()">Esqueci a senha</button>
+    <div class="login-feedback" id="login-feedback" aria-live="polite"></div>
+    <div class="login-separator"><span>ou</span></div>
+    <button class="login-local" type="button" onclick="authUI.enterLocalAdmin()">Acessar como administrador local</button>
+    <p class="login-note">Acesso local neste navegador. O login por e-mail será ativado após a integração com o Firebase.</p>
+  </div>
+</section>
 <div class="app">
   <aside class="sidebar">
     <div class="brand">
@@ -340,6 +381,7 @@ td strong{font-size:13px}
         </span>
         <span class="today" id="today"></span>
         <div class="avatar">E</div>
+        <button class="login-logout" type="button" onclick="authUI.logout()">Sair</button>
       </div>
     </header>
     <section class="content" id="view"></section>
@@ -349,6 +391,19 @@ td strong{font-size:13px}
 <div id="toast-root"></div>
 
 <script>
+window.authUI={
+  signIn(event){event.preventDefault();document.querySelector('#login-feedback').textContent='O login por e-mail será habilitado quando conectarmos o Firebase Authentication.';return false},
+  showForgot(){
+    const title=document.querySelector('#login-title'),sub=document.querySelector('#login-subtitle'),form=document.querySelector('#login-form'),forgot=document.querySelector('#forgot-button'),feedback=document.querySelector('#login-feedback');
+    title.textContent='Recuperar senha';sub.textContent='Informe o e-mail da sua conta para receber as instruções.';
+    form.innerHTML='<div class="login-field"><label for="reset-email">E-mail</label><input id="reset-email" type="email" autocomplete="email" placeholder="voce@exemplo.com" required></div><button class="login-submit" type="submit">Enviar instruções</button>';
+    form.onsubmit=(event)=>{event.preventDefault();feedback.textContent='A recuperação por e-mail será ativada após a configuração do Firebase.';return false};
+    forgot.textContent='Voltar ao login';forgot.onclick=()=>location.reload();feedback.textContent='';
+  },
+  enterLocalAdmin(){sessionStorage.setItem('escala-clara-local-admin','1');document.body.classList.add('authenticated')},
+  logout(){sessionStorage.removeItem('escala-clara-local-admin');document.body.classList.remove('authenticated');location.reload()}
+};
+if(sessionStorage.getItem('escala-clara-local-admin')==='1')document.body.classList.add('authenticated');
 (()=>{
   'use strict';
   const KEY='escala-clara-v1';
