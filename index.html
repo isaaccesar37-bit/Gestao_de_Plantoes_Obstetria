@@ -2,7 +2,13 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#087f78">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Gestão de plantões">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
 <title>Gestão de plantões</title>
 <style>
 :root{--ink:#172c3a;--muted:#71818b;--line:#e5eceb;--paper:#f5f8f7;--white:#fff;--teal:#087f78;--teal2:#e5f5f2;--navy:#143543;--gold:#e5a840;--red:#b85454;--shadow:0 12px 35px #183b4610}
@@ -325,6 +331,26 @@ body.authenticated .login-screen,body.offline-mode .login-screen{display:none}
 .login-feedback{min-height:18px;margin:10px 0 0;color:#a94f4f;font-size:12px;text-align:center}
 .login-logout{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 10px;color:#52656c;font-size:12px;font-weight:600}
 @media(max-width:520px){.login-card{padding:26px 22px}.topbar{padding:0 16px}.login-screen{padding:16px}}
+/* Ajustes para celulares em retrato e áreas seguras do aparelho */
+@media(max-width:430px) and (orientation:portrait){
+  html,body{width:100%;min-width:0;overflow-x:hidden}
+  .login-screen{position:fixed;inset:0;padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));overflow-y:auto;place-items:center}
+  .login-card{width:100%;max-width:440px;padding:24px 20px;border-radius:18px}
+  .login-brand{margin-bottom:22px;gap:11px}
+  .login-card h1{font-size:23px}
+  .login-subtitle{margin-bottom:20px}
+  .login-field input,.login-submit,.login-local{min-height:46px}
+  .login-forgot{min-height:44px;padding:10px}
+  .content{padding:16px 10px}
+  .card{border-radius:11px}
+  .card-head{padding:13px 12px;align-items:flex-start;flex-wrap:wrap}
+  .tabs{padding:0 8px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin}
+  .tab{flex:0 0 auto;min-height:44px;padding:11px 10px;white-space:nowrap}
+  .matrix-tools,.monthly-tools{padding:11px}
+  .table-wrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .button,.icon-btn{min-height:42px}
+  .modal{width:min(100%,560px);margin:auto}
+}
 </style>
 </head>
 <body>
@@ -343,6 +369,8 @@ body.authenticated .login-screen,body.offline-mode .login-screen{display:none}
     <div class="login-separator"><span>ou</span></div>
     <button class="login-local" id="login-offline" type="button" onclick="authUI.enterOffline()">Uso Offline</button>
     <p class="login-note" id="login-note">No modo offline, os dados ficam somente no cache deste navegador e não são enviados nem sincronizados com o Firebase.</p>
+    <button class="login-forgot install-app-button" id="install-app" type="button" hidden>Instalar app</button>
+    <p class="login-note" id="install-note" aria-live="polite" hidden></p>
   </div>
 </section>
 <div class="app">
@@ -466,6 +494,22 @@ window.authUI={
 if('serviceWorker' in navigator&&location.protocol==='https:'){
   window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(error=>console.warn('Cache offline indisponível.',error)));
 }
+(()=>{
+  const button=document.querySelector('#install-app'),note=document.querySelector('#install-note');
+  if(!button||!('serviceWorker' in navigator))return;
+  let installPrompt=null;
+  const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent)&&!window.MSStream;
+  const standalone=window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+  if(standalone)return;
+  button.hidden=false;
+  window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();installPrompt=event;button.textContent='Instalar app'});
+  button.addEventListener('click',async()=>{
+    if(installPrompt){installPrompt.prompt();await installPrompt.userChoice;installPrompt=null;return}
+    note.hidden=false;
+    note.textContent=isIOS?'No Safari, toque em Compartilhar e depois em “Adicionar à Tela de Início”.':'Para instalar, abra o menu do navegador e escolha “Instalar app” ou “Adicionar à tela inicial”.'};
+  });
+  window.addEventListener('appinstalled',()=>{button.hidden=true;note.hidden=false;note.textContent='App instalado com sucesso.'});
+})();
 (()=>{
   'use strict';
   const KEY='escala-clara-v1';
