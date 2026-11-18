@@ -506,7 +506,7 @@ if('serviceWorker' in navigator&&location.protocol==='https:'){
   button.addEventListener('click',async()=>{
     if(installPrompt){installPrompt.prompt();await installPrompt.userChoice;installPrompt=null;return}
     note.hidden=false;
-    note.textContent=isIOS?'No Safari, toque em Compartilhar e depois em “Adicionar à Tela de Início”.':'Para instalar, abra o menu do navegador e escolha “Instalar app” ou “Adicionar à tela inicial”.'};
+    note.textContent=isIOS?'No Safari, toque em Compartilhar e depois em “Adicionar à Tela de Início”.':'Para instalar, abra o menu do navegador e escolha “Instalar app” ou “Adicionar à tela inicial”.';
   });
   window.addEventListener('appinstalled',()=>{button.hidden=true;note.hidden=false;note.textContent='App instalado com sucesso.'});
 })();
