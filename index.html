@@ -150,7 +150,7 @@ td strong{font-size:13px}
 .legend-chip.available{background:#6f9bc3}
 .hint{font-size:12px;color:var(--muted);padding:12px 18px;background:#fbfcfc;border-top:1px solid var(--line)}
 .overlay{position:fixed;inset:0;background:#10263180;display:grid;place-items:center;padding:20px;z-index:50}
-.modal{background:white;border-radius:16px;width:min(520px,100%);box-shadow:0 24px 80px #0a202a55}
+.modal{background:white;border-radius:16px;width:min(520px,100%);max-height:calc(100vh - 40px);overflow-y:auto;box-shadow:0 24px 80px #0a202a55}
 .modal-head{padding:19px 22px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
 .modal-head h2{margin:0;font-size:18px}
 .modal-body{padding:20px 22px;display:grid;gap:14px}
@@ -401,6 +401,7 @@ body.authenticated .login-screen,body.offline-mode .login-screen{display:none}
       <nav class="nav">
         <button class="active" data-page="equipe" title="Enfermeiros" aria-label="Enfermeiros"><span class="icon" aria-hidden="true">♙</span><span class="label">Enfermeiros</span></button>
         <button data-page="plantao" title="Plantões" aria-label="Plantões"><span class="icon" aria-hidden="true">◷</span><span class="label">Plantões</span></button>
+        <button data-page="pacientes" title="Pacientes" aria-label="Pacientes"><span class="icon" aria-hidden="true">♡</span><span class="label">Pacientes</span></button>
         <button data-page="disponibilidade" title="Disponibilidade" aria-label="Disponibilidade"><span class="icon" aria-hidden="true">☑</span><span class="label">Disponibilidade</span></button>
         <button data-page="manual" title="Inserir/Importar dados" aria-label="Inserir/Importar dados"><span class="icon" aria-hidden="true">✎</span><span class="label">Inserir/Importar dados</span></button>
         <button data-page="calendario" title="Calendário" aria-label="Calendário"><span class="icon" aria-hidden="true">▦</span><span class="label">Calendário</span></button>
@@ -544,6 +545,7 @@ if('serviceWorker' in navigator&&location.protocol==='https:'){
     x.availability=x.availability&&typeof x.availability==='object'?x.availability:{};
     x.rosters=x.rosters&&typeof x.rosters==='object'?x.rosters:{};
     x.manualEntries=Array.isArray(x.manualEntries)?x.manualEntries:[];
+    x.patients=Array.isArray(x.patients)?x.patients:[];
     if(!x.externalLink||x.externalLink==='https://forms.google.com'||x.externalLink.includes('1FAIpQLScgV3081gzDz5Ff24UJjRFN3K7UfPLrtTU-rmIZjs4o8DPXEQ'))x.externalLink=DEFAULT_LINK;
     x.adminPassword=x.adminPassword||'admin123';
     x.shifts.forEach((s,i)=>{s.code=s.code||('P'+String(i+1).padStart(3,'0'));s.hospital=s.hospital||s.unit||'';s.vacancies=Number(s.vacancies||2)});
@@ -656,7 +658,7 @@ if('serviceWorker' in navigator&&location.protocol==='https:'){
     if(p==='calendario') focusCalendarMonth();
     page=p;
     document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===p));
-    $('#crumb').textContent={equipe:'Enfermeiros',plantao:'Plantões',disponibilidade:'Disponibilidade',calendario:'Calendário',manual:'Inserir/Importar dados',dados:'Importar e Exportar Dados'}[p];
+    $('#crumb').textContent={equipe:'Enfermeiros',plantao:'Plantões',pacientes:'Pacientes',disponibilidade:'Disponibilidade',calendario:'Calendário',manual:'Inserir/Importar dados',dados:'Importar e Exportar Dados'}[p];
     render();
   }
 
@@ -666,6 +668,7 @@ if('serviceWorker' in navigator&&location.protocol==='https:'){
   function render(){
     if(page==='equipe') renderNurses();
     if(page==='plantao') renderShifts();
+    if(page==='pacientes') renderPatients();
     if(page==='disponibilidade') renderAvailability();
     if(page==='manual') renderManual();
     if(page==='calendario') renderCalendar();
@@ -730,18 +733,20 @@ if('serviceWorker' in navigator&&location.protocol==='https:'){
           </select>
         </div>`:''}
       </div>
-      ${filteredShifts.length?`<div class="table-wrap"><table><thead><tr><th>Código</th><th>Plantão</th><th>Data</th><th>Horário</th><th>Hospital</th><th>Enfermeiro(a) Escalado(a)</th><th>Vagas</th><th></th></tr></thead><tbody>
+      ${filteredShifts.length?`<div class="table-wrap"><table><thead><tr><th>Código</th><th>Plantão</th><th>Data</th><th>Pacientes vinculadas</th><th>Horário</th><th>Hospital</th><th>Enfermeiro(a) Escalado(a)</th><th>Vagas</th><th></th></tr></thead><tbody>
       ${filteredShifts.map(s=>{
         let r=db.rosters?.[s.id]||{},
             assignedIds=r.assigned?.length?r.assigned:db.nurses.filter(n=>db.availability[`${n.id}:${s.id}`]==='yes').slice(0,s.vacancies||2).map(n=>n.id),
             assignedNurses=assignedIds.map(x=>db.nurses.find(n=>n.id===x)).filter(Boolean),
             nurseListHtml=assignedNurses.length
               ? assignedNurses.map(n=>`<span class="tag" style="background:#e6f1f8;color:#1d74a9;font-weight:600;margin:2px 4px 2px 0;display:inline-flex;align-items:center;gap:5px">${esc(n.name)}<button type="button" onclick="app.removeNurseFromShift('${s.id}','${n.id}')" style="border:0;background:transparent;color:#b85454;font-size:14px;font-weight:bold;cursor:pointer;padding:0 2px;line-height:1;display:inline-flex;align-items:center;justify-content:center" title="Remover ${esc(n.name)} deste plantão">×</button></span>`).join('')
-              : `<span class="muted">Sem profissional alocado</span>`;
+              : `<span class="muted">Sem profissional alocado</span>`,
+            patientListHtml=(db.patients||[]).filter(p=>(p.shiftIds||[]).includes(s.id)).map(p=>`<div style="margin:3px 0"><strong style="color:${p.risk==='high'?'#b85454':p.risk==='low'?'#0daf74':'#6c8192'}">${esc(p.name)}</strong>${p.maternity?`<div class="muted">${esc(p.maternity)}</div>`:''}</div>`).join('')||'<span class="muted">—</span>';
         return `<tr>
           <td><strong>${esc(s.code||'')}</strong></td>
           <td>${esc(s.name)}</td>
           <td>${dateBR(s.date)}</td>
+          <td>${patientListHtml}</td>
           <td>${s.start} – ${s.end}</td>
           <td>${esc(s.hospital||s.unit||'—')}</td>
           <td>${nurseListHtml}</td>
@@ -750,6 +755,19 @@ if('serviceWorker' in navigator&&location.protocol==='https:'){
         </tr>`;
       }).join('')}</tbody></table></div>`:empty('Nenhum plantão cadastrado','Insira a disponibilidade e os códigos dos plantões na aba “Inserir/Importar dados”.')}
     </div>`;
+  }
+
+  function renderPatients(){
+    let patients=[...(db.patients||[])].sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'pt-BR'));
+    $('#view').innerHTML=header('Pacientes','Cadastre as informações e vincule cada paciente a um ou mais plantões.',`<button class="button primary" onclick="app.openPatient()">＋ Nova paciente</button>`)+stats()+`
+    <div class="card"><div class="card-head"><h2>Cadastro de pacientes (${patients.length})</h2><small><span style="color:#b85454;font-weight:700">Vermelho: alto risco</span> · <span style="color:#0daf74;font-weight:700">Verde: baixo risco</span></small></div>
+    ${patients.length?`<div class="table-wrap"><table><thead><tr><th>Paciente</th><th>IG na contratação</th><th>Data da contratação</th><th>DPP</th><th>Risco</th><th>Maternidade</th><th>Pagamento</th><th>Observações</th><th>Telefone</th><th>Instagram</th><th>E-mail</th><th>Enfermeiro(a) referência</th><th>Backup</th><th>Plantões vinculados</th><th></th></tr></thead><tbody>
+      ${patients.map(p=>{let refs=(db.nurses||[]),shifts=(p.shiftIds||[]).map(id=>db.shifts.find(s=>s.id===id)).filter(Boolean);return `<tr>
+        <td><strong style="color:${p.risk==='high'?'#b85454':p.risk==='low'?'#0daf74':'#163250'}">${esc(p.name)}</strong></td><td>${esc(p.gestationalAge||'—')}</td><td>${p.contractDate?dateBR(p.contractDate):'—'}</td><td>${p.dueDate?dateBR(p.dueDate):'—'}</td>
+        <td>${esc(p.risk==='high'?'Alto risco':p.risk==='low'?'Baixo risco':'—')}</td><td>${esc(p.maternity||'—')}</td><td>${esc(p.paymentMethod||'—')}</td><td>${esc(p.notes||'—')}</td><td>${esc(p.phone||'—')}</td><td>${esc(p.instagram||'—')}</td><td>${esc(p.email||'—')}</td>
+        <td>${esc(refs.find(n=>n.id===p.nursePrimary)?.name||'—')}</td><td>${esc(refs.find(n=>n.id===p.nurseBackup)?.name||'—')}</td><td>${shifts.map(s=>`${dateBR(s.date)} · ${esc(s.name||s.code)}`).join('<br>')||'—'}</td>
+        <td><div class="actions"><button class="icon-btn" title="Editar" onclick="app.openPatient('${p.id}')">✎</button><button class="icon-btn" title="Excluir" onclick="app.removePatient('${p.id}')">×</button></div></td>
+      </tr>`}).join('')}</tbody></table></div>`:empty('Nenhuma paciente cadastrada','Adicione uma paciente para vinculá-la aos plantões.')}</div>`;
   }
 
   function renderAvailability(){
@@ -887,7 +905,7 @@ if('serviceWorker' in navigator&&location.protocol==='https:'){
       `<div class="data-transfer-grid">
         <section class="card">
           <div class="card-head"><div><h2>Exportar dados</h2><p>Baixe uma cópia completa em formato JSON.</p></div></div>
-          <div class="data-transfer-body"><p>O arquivo inclui enfermeiros, plantões, disponibilidades, escalas e linhas importadas.</p>
+          <div class="data-transfer-body"><p>O arquivo inclui enfermeiros, pacientes, plantões, disponibilidades, escalas e linhas importadas.</p>
             <button class="button primary" type="button" onclick="app.exportData()">⇩ Exportar cópia dos dados</button>
           </div>
         </section>
@@ -915,18 +933,20 @@ if('serviceWorker' in navigator&&location.protocol==='https:'){
                 available=db.nurses.filter(n=>db.availability[`${n.id}:${s.id}`]==='yes'),
                 assigned=r.assigned?.length?r.assigned:available.slice(0,s.vacancies||2).map(n=>n.id),
                 ids=calendarMode==='disponiveis'?available.filter(n=>!assigned.includes(n.id)).map(n=>n.id):assigned,
-                names=ids.map(x=>db.nurses.find(n=>n.id===x)?.name).filter(Boolean);
-            return{shift:s,names};
-          }).filter(x=>x.names.length).sort((a,b)=>String(a.shift.start||'').localeCompare(String(b.shift.start||''))),
+                names=ids.map(x=>db.nurses.find(n=>n.id===x)?.name).filter(Boolean),
+                patients=calendarMode==='escalados'?(db.patients||[]).filter(p=>(p.shiftIds||[]).includes(s.id)):[];
+            return{shift:s,names,patients};
+          }).filter(x=>x.names.length||x.patients.length).sort((a,b)=>String(a.shift.start||'').localeCompare(String(b.shift.start||''))),
           outside=d.getMonth()!==month.getMonth();
       out+=`<div class="day ${outside?'outside':''}">
         <div class="daynum">${d.getDate()}</div>
         ${shifts.slice(0,3).map(item=>{
-          let s=item.shift,names=item.names;
+          let s=item.shift,names=item.names,patients=item.patients;
           return `<div class="event schedule-line ${calendarMode==='disponiveis'?'available-slot':''}" title="${calendarMode==='disponiveis'?'Disponível e não escalado':'Escalado'} · ${esc(s.name||s.code||'Plantão')}">
             <span class="schedule-time">${esc(s.start||'—')}</span>
             <span class="schedule-separator">-</span>
             <span class="schedule-names">${esc(names.join(', '))}</span>
+            ${patients.map(p=>`<span style="display:block;font-size:10px;font-weight:700;color:${p.risk==='high'?'#b85454':p.risk==='low'?'#0daf74':'#6c8192'}">${esc(p.name)}${p.maternity?` · ${esc(p.maternity)}`:''}</span>`).join('')}
           </div>`;
         }).join('')}
         ${shifts.length>3?`<div class="event more">+${shifts.length-3} plantões</div>`:''}
@@ -1259,6 +1279,40 @@ if('serviceWorker' in navigator&&location.protocol==='https:'){
       return false;
     },
 
+    openPatient(pid){
+      let p=(db.patients||[]).find(x=>x.id===pid)||{},
+          linked=new Set(p.shiftIds||[]),
+          shifts=[...(db.shifts||[])].sort((a,b)=>a.date.localeCompare(b.date)||String(a.start||'').localeCompare(String(b.start||''))),
+          nurseOptions=(db.nurses||[]).map(n=>`<option value="${esc(n.id)}">${esc(n.name)}</option>`).join('');
+      modal(pid?'Editar paciente':'Nova paciente',`
+        <input type="hidden" name="id" value="${esc(p.id||'')}">
+        <div class="form-row"><div class="field"><label>Nome da paciente *</label><input name="name" required maxlength="120" value="${esc(p.name||'')}"></div><div class="field"><label>Idade gestacional na contratação</label><input name="gestationalAge" maxlength="40" value="${esc(p.gestationalAge||'')}" placeholder="Ex.: 32 semanas"></div></div>
+        <div class="form-row"><div class="field"><label>Data da contratação</label><input name="contractDate" type="date" value="${esc(p.contractDate||'')}"></div><div class="field"><label>Data provável do parto (DPP)</label><input name="dueDate" type="date" value="${esc(p.dueDate||'')}"></div></div>
+        <div class="form-row"><div class="field"><label>Classificação de risco *</label><select name="risk" required><option value="">Selecione</option><option value="high" ${p.risk==='high'?'selected':''}>Alto risco</option><option value="low" ${p.risk==='low'?'selected':''}>Baixo risco</option></select></div><div class="field"><label>Maternidade</label><input name="maternity" maxlength="120" value="${esc(p.maternity||'')}"></div></div>
+        <div class="form-row"><div class="field"><label>Forma de pagamento</label><input name="paymentMethod" maxlength="100" value="${esc(p.paymentMethod||'')}"></div><div class="field"><label>Contato telefônico</label><input name="phone" type="tel" maxlength="40" value="${esc(p.phone||'')}"></div></div>
+        <div class="form-row"><div class="field"><label>Instagram</label><input name="instagram" maxlength="100" value="${esc(p.instagram||'')}"></div><div class="field"><label>E-mail</label><input name="email" type="email" maxlength="120" value="${esc(p.email||'')}"></div></div>
+        <div class="form-row"><div class="field"><label>Enfermeiro(a) referência</label><select name="nursePrimary"><option value="">Selecione</option>${nurseOptions}</select></div><div class="field"><label>Enfermeiro(a) backup</label><select name="nurseBackup"><option value="">Selecione</option>${nurseOptions}</select></div></div>
+        <div class="field"><label>Outros / observações</label><textarea name="notes" maxlength="1000" rows="3" style="border:1px solid var(--line);border-radius:8px;padding:10px 11px;font:inherit">${esc(p.notes||'')}</textarea></div>
+        <div class="field"><label>Plantões vinculados</label><small class="muted">Selecione um ou mais plantões. O nome aparecerá na data de cada plantão.</small>
+        <div style="display:grid;gap:8px;max-height:160px;overflow:auto;padding:8px;border:1px solid var(--line);border-radius:8px">${shifts.length?shifts.map(s=>`<label style="display:flex;align-items:center;gap:8px;font-size:13px"><input type="checkbox" name="shiftIds" value="${esc(s.id)}" ${linked.has(s.id)?'checked':''}>${dateBR(s.date)} · ${esc(s.name||s.code)} · ${esc(s.start||'')} · ${esc(s.hospital||s.unit||'')}</label>`).join(''):'<span class="muted">Cadastre um plantão antes de fazer o vínculo.</span>'}</div></div>
+      `,`return app.savePatient(event)`,'Salvar paciente');
+      const form=$('#modal-root form');
+      if(form){form.elements.nursePrimary.value=p.nursePrimary||'';form.elements.nurseBackup.value=p.nurseBackup||''}
+    },
+    savePatient(e){
+      e.preventDefault();
+      let f=new FormData(e.target),idValue=f.get('id'),patient={id:idValue||id(),name:f.get('name').trim(),gestationalAge:f.get('gestationalAge').trim(),contractDate:f.get('contractDate'),dueDate:f.get('dueDate'),risk:f.get('risk'),maternity:f.get('maternity').trim(),paymentMethod:f.get('paymentMethod').trim(),notes:f.get('notes').trim(),phone:f.get('phone').trim(),instagram:f.get('instagram').trim(),email:f.get('email').trim(),nursePrimary:f.get('nursePrimary'),nurseBackup:f.get('nurseBackup'),shiftIds:f.getAll('shiftIds')};
+      if(idValue)db.patients=(db.patients||[]).map(x=>x.id===idValue?patient:x);else db.patients.push(patient);
+      save();this.closeModal();render();toast('Paciente salva');return false;
+    },
+    removePatient(pid){
+      let p=(db.patients||[]).find(x=>x.id===pid);if(!p)return;
+      modal('Confirmar exclusão',`<p>Deseja excluir o cadastro de <strong>${esc(p.name)}</strong>?</p>`,`return app.doRemovePatient('${pid}')`,'Excluir');
+    },
+    doRemovePatient(pid){
+      db.patients=(db.patients||[]).filter(x=>x.id!==pid);save();this.closeModal();render();toast('Paciente excluída');return false;
+    },
+
     openShift(sid){
       let s=db.shifts.find(x=>x.id===sid)||{},
           code='P'+String(db.shifts.reduce((m,x)=>Math.max(m,parseInt(String(x.code||'').slice(1),10)||0),0)+1).padStart(3,'0');
@@ -1299,6 +1353,7 @@ if('serviceWorker' in navigator&&location.protocol==='https:'){
     },
     doRemoveShift(sid){
       db.shifts=db.shifts.filter(x=>x.id!==sid);
+      db.patients=(db.patients||[]).map(p=>({...p,shiftIds:(p.shiftIds||[]).filter(id=>id!==sid)}));
       for(let k of Object.keys(db.availability)) if(k.endsWith(':'+sid)) delete db.availability[k];
       save();
       this.closeModal();
@@ -1484,7 +1539,7 @@ if('serviceWorker' in navigator&&location.protocol==='https:'){
             s.hospital=s.hospital||s.unit||'';
             s.vacancies=Number(s.vacancies||2);
           });
-          db={nurses:x.nurses,shifts:x.shifts,availability:x.availability,rosters:x.rosters,manualEntries:x.manualEntries||[]};
+          db={nurses:x.nurses,shifts:x.shifts,availability:x.availability,rosters:x.rosters,manualEntries:x.manualEntries||[],patients:Array.isArray(x.patients)?x.patients:[]};
           save();
           render();
           toast('Dados importados com sucesso');
@@ -1535,6 +1590,7 @@ if('serviceWorker' in navigator&&location.protocol==='https:'){
         },
         rosters:{},
         manualEntries:[],
+        patients:[],
         externalLink:db.externalLink||DEFAULT_LINK,
         adminPassword:db.adminPassword||'admin123'
       };
