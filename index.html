@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#086a9d">
+<meta name="theme-color" content="#1d74a9">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Plantão+">
@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="./icons/icon-192.png">
 <title>PLANTÃO+ | Gestão de plantões</title>
 <style>
-:root{--ink:#172c3a;--muted:#71818b;--line:#e5eceb;--paper:#f5f8f7;--white:#fff;--teal:#087f78;--teal2:#e5f5f2;--navy:#143543;--gold:#e5a840;--red:#b85454;--shadow:0 12px 35px #183b4610}
+:root{--ink:#163250;--muted:#6c8192;--line:#dce7eb;--paper:#f4f8fa;--white:#fff;--teal:#1d74a9;--teal2:#e6f1f8;--navy:#163250;--green:#0daf74;--green-soft:#e7f6ef;--gold:#e5a840;--red:#b85454;--shadow:0 12px 35px #16325012}
 *{box-sizing:border-box}
 body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.45 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
 button,input,select{font:inherit}
@@ -20,11 +20,12 @@ button{cursor:pointer}
 .app{min-height:100vh;display:grid;grid-template-columns:250px 1fr;transition:grid-template-columns .25s ease}
 .sidebar{background:var(--navy);color:#ecf5f4;padding:27px 18px;display:flex;flex-direction:column;gap:32px}
 .brand{display:flex;align-items:center;gap:12px;padding:0 8px}
-.logo{height:52px;width:52px;border-radius:14px;background:#35b5a5;display:grid;place-items:center;color:#fff;font-weight:800;font-size:18px;flex-shrink:0}
+.logo{height:52px;width:52px;border-radius:14px;background:#0daf74;display:grid;place-items:center;color:#fff;font-weight:800;font-size:18px;flex-shrink:0}
 .logo-image{display:block;object-fit:cover;padding:0;background:transparent}
+.brand .logo-image{object-fit:contain;padding:3px;background:#f4f8fa;border-radius:14px}
 .brand strong{display:block;font-size:16px;letter-spacing:.2px}
 .brand small{color:#a9c1c7;font-size:11px}
-.brand-plus{color:#20bd7a}
+.brand-plus{color:#0daf74}
 .brand-text small{display:block;color:#a9c1c7;font-size:10px;letter-spacing:.1px}
 
 .sidebar-toggle-btn{border:0;background:rgba(255,255,255,.1);color:#b6cbd0;width:30px;height:30px;border-radius:8px;display:grid;place-items:center;margin-left:auto;cursor:pointer;flex-shrink:0;transition:all .2s}
@@ -48,7 +49,7 @@ button{cursor:pointer}
 .form-access-box{margin:22px 0 0;background:var(--navy);border-color:#ffffff20;max-width:520px;box-shadow:var(--shadow)}
 .side-link-title{color:white;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.8px}
 .side-link-input-wrap input{width:100%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);border-radius:7px;padding:7px 9px;color:#fff;font-size:12px;outline:none}
-.side-link-btn{display:flex;align-items:center;justify-content:space-between;background:#35b5a5;color:#fff;text-decoration:none;padding:8px 10px;border-radius:7px;font-weight:600;font-size:12px;transition:all .2s;border:0;cursor:pointer;width:100%}
+.side-link-btn{display:flex;align-items:center;justify-content:space-between;background:#1d74a9;color:#fff;text-decoration:none;padding:8px 10px;border-radius:7px;font-weight:600;font-size:12px;transition:all .2s;border:0;cursor:pointer;width:100%}
 .side-link-btn:hover{filter:brightness(1.1)}
 .side-link-btn.secondary{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#ecf5f4}
 .side-link-btn.secondary:hover{background:rgba(255,255,255,.22);color:#fff;filter:none}
@@ -60,7 +61,7 @@ button{cursor:pointer}
 .crumb{color:var(--muted);font-size:13px}
 .topbar-right{display:flex;align-items:center;gap:12px}
 .today{font-size:12px;color:var(--muted)}
-.avatar{height:34px;width:34px;background:#d8efeb;color:#087f78;border-radius:50%;display:grid;place-items:center;font-weight:700}
+.avatar{height:34px;width:34px;background:#e7f6ef;color:#1d74a9;border-radius:50%;display:grid;place-items:center;font-weight:700}
 .content{max-width:1400px;padding:32px 36px;margin:auto}
 .page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:24px}
 .page-head h1{font-size:27px;letter-spacing:-.6px;margin:0 0 5px}
@@ -83,10 +84,10 @@ button{cursor:pointer}
 .table-wrap{overflow:auto}
 table{border-collapse:collapse;width:100%;min-width:600px}
 th{text-align:left;padding:12px 18px;font-size:10px;color:var(--muted);letter-spacing:.9px;text-transform:uppercase;background:#fbfcfc;white-space:nowrap}
-td{padding:14px 18px;border-top:1px solid #edf1f0;font-size:13px;vertical-align:middle}
+td{padding:14px 18px;border-top:1px solid #e7eef2;font-size:13px;vertical-align:middle}
 td strong{font-size:13px}
 .person{display:flex;gap:10px;align-items:center}
-.initial{width:34px;height:34px;display:grid;place-items:center;border-radius:10px;background:#e8f3f1;color:var(--teal);font-weight:700}
+.initial{width:34px;height:34px;display:grid;place-items:center;border-radius:10px;background:#e7f6ef;color:var(--teal);font-weight:700}
 .muted{color:var(--muted);font-size:12px}
 .tag{padding:4px 8px;border-radius:20px;background:var(--teal2);color:#13766d;font-size:11px;font-weight:650;white-space:nowrap}
 .tag.gray{background:#eff2f3;color:#596b73}
@@ -109,7 +110,7 @@ td strong{font-size:13px}
 .shift-head small{font-size:10px;text-transform:none;letter-spacing:0}
 .availability{display:flex;gap:5px}
 .availability button{border:1px solid var(--line);background:white;color:#89969b;border-radius:7px;padding:5px 9px;font-size:11px}
-.availability button.yes.selected{border-color:#98d5c9;background:#e6f6f2;color:#14796e}
+.availability button.yes.selected{border-color:#9bdcb9;background:#e7f6ef;color:#16885d}
 .availability button.no.selected{border-color:#e5c3c3;background:#fcf0f0;color:#a94f4f}
 .roster-summary{display:grid;grid-template-columns:repeat(4,minmax(130px,1fr));gap:10px;padding:15px 18px;background:#fbfcfc;border-bottom:1px solid var(--line)}
 .roster-box{border:1px solid var(--line);border-radius:9px;padding:10px 12px;background:white;min-height:64px}
@@ -118,11 +119,11 @@ td strong{font-size:13px}
 .paste-panel{display:grid;grid-template-columns:1fr auto;gap:10px;padding:16px 18px;border-bottom:1px solid var(--line);align-items:end}
 .paste-panel label{display:grid;gap:3px;font-size:13px}
 .paste-panel label span{font-size:11px;color:var(--muted)}
-.paste-panel textarea{grid-column:1/-1;width:100%;resize:vertical;border:1px solid #dce5e3;border-radius:8px;padding:10px;font:12px/1.4 ui-monospace,monospace;color:var(--ink)}
+.paste-panel textarea{grid-column:1/-1;width:100%;resize:vertical;border:1px solid #dce7eb;border-radius:8px;padding:10px;font:12px/1.4 ui-monospace,monospace;color:var(--ink)}
 .manual-table{min-width:760px}
-.manual-table th{background:#326d6b;color:#fff;text-transform:none;letter-spacing:0;font-size:12px}
+.manual-table th{background:#1d74a9;color:#fff;text-transform:none;letter-spacing:0;font-size:12px}
 .manual-table td{padding:10px 14px}
-.manual-table input,.manual-table select{width:100%;border:1px solid #dce5e3;border-radius:7px;padding:9px;background:#fff;color:var(--ink)}
+.manual-table input,.manual-table select{width:100%;border:1px solid #dce7eb;border-radius:7px;padding:9px;background:#fff;color:var(--ink)}
 .manual-table .manual-shifts-text{min-width:450px}
 .manual-table select[multiple]{min-height:86px}
 .manual-table .muted{display:block;margin-top:4px}
@@ -132,11 +133,11 @@ td strong{font-size:13px}
 .month-control button{border:1px solid var(--line);background:white;border-radius:7px;width:32px;height:32px;color:var(--ink)}
 .calendar{display:grid;grid-template-columns:repeat(7,minmax(105px,1fr));}
 .weekday{padding:10px 11px;text-align:center;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.7px;border-bottom:1px solid var(--line);background:#fbfcfc}
-.day{min-height:118px;border-right:1px solid #edf1f0;border-bottom:1px solid #edf1f0;padding:8px;min-width:0}
+.day{min-height:118px;border-right:1px solid #e7eef2;border-bottom:1px solid #e7eef2;padding:8px;min-width:0}
 .day:nth-child(7n){border-right:0}
 .day.outside{background:#fafbfb;color:#b5c0c3}
 .daynum{font-size:11px;color:#6c7d84;margin-bottom:6px}
-.event{background:#e9f5f2;border-left:2px solid #42a89b;border-radius:5px;padding:5px 6px;margin:4px 0;font-size:10px;line-height:1.35;overflow:hidden}
+.event{background:#e6f1f8;border-left:2px solid #0daf74;border-radius:5px;padding:5px 6px;margin:4px 0;font-size:10px;line-height:1.35;overflow:hidden}
 .event strong{display:block;font-size:10px;color:#166e66}
 .event span{color:#52706f}
 .event.overlap{background:#fff3dc;border-color:#e1a947}
@@ -144,7 +145,7 @@ td strong{font-size:13px}
 .event.available-slot .schedule-names{color:#315d83}
 .event.more{background:#f1f3f4;border:0;color:#61747c}
 .calendar-legend{display:flex;gap:16px;padding:13px 18px;color:var(--muted);font-size:11px;border-top:1px solid var(--line)}
-.legend-chip{width:9px;height:9px;border-radius:3px;background:#42a89b;display:inline-block;margin-right:5px}
+.legend-chip{width:9px;height:9px;border-radius:3px;background:#0daf74;display:inline-block;margin-right:5px}
 .legend-chip.gold{background:#e1a947}
 .legend-chip.available{background:#6f9bc3}
 .hint{font-size:12px;color:var(--muted);padding:12px 18px;background:#fbfcfc;border-top:1px solid var(--line)}
@@ -156,7 +157,7 @@ td strong{font-size:13px}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .field{display:grid;gap:5px}
 .field label{font-size:12px;font-weight:650;color:#425862}
-.field input,.field select{border:1px solid #dce5e3;border-radius:8px;padding:10px 11px;outline:none;width:100%;background:white;color:var(--ink)}
+.field input,.field select{border:1px solid #dce7eb;border-radius:8px;padding:10px 11px;outline:none;width:100%;background:white;color:var(--ink)}
 .field input:focus,.field select:focus{border-color:#54b1a5;box-shadow:0 0 0 3px #54b1a51c}
 .modal-actions{display:flex;justify-content:flex-end;gap:8px;padding:0 22px 20px}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#173a46;color:#fff;padding:11px 16px;border-radius:9px;font-size:13px;box-shadow:var(--shadow);z-index:60}
@@ -188,9 +189,9 @@ td strong{font-size:13px}
   .roster-box b{display:block;font-size:11px;color:var(--muted);margin-bottom:5px}
   .roster-box span{font-size:12px}
   .manual-table{min-width:760px}
-  .manual-table th{background:#326d6b;color:#fff;text-transform:none;letter-spacing:0;font-size:12px}
+  .manual-table th{background:#1d74a9;color:#fff;text-transform:none;letter-spacing:0;font-size:12px}
   .manual-table td{padding:10px 14px}
-  .manual-table input,.manual-table select{width:100%;border:1px solid #dce5e3;border-radius:7px;padding:9px;background:#fff;color:var(--ink)}
+  .manual-table input,.manual-table select{width:100%;border:1px solid #dce7eb;border-radius:7px;padding:9px;background:#fff;color:var(--ink)}
   .manual-table .manual-shifts-text{min-width:450px}
   .manual-table select[multiple]{min-height:86px}
   .manual-table .muted{display:block;margin-top:4px}
@@ -207,23 +208,23 @@ td strong{font-size:13px}
 .calendar .event{background:transparent;border:0;border-radius:0;padding:0 4px;margin:2px 0 0;font-size:12px;line-height:1.3;color:var(--ink);white-space:normal;overflow-wrap:anywhere}
 .calendar .event strong{display:block;font-size:12px;font-weight:400;color:var(--ink)}
 .calendar .event span{display:inline;color:var(--muted)}
-.calendar{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;border-color:#c7ddd5}
-.calendar-toolbar{background:#e9f5f1;border-bottom-color:#c7ddd5}
-.calendar-toolbar .month-control h2{color:#155b50}
-.calendar-toolbar .month-control button{border-color:#c7ddd5;color:#155b50}
-.calendar .weekday{background:#dcefe8;color:#155b50;border-color:#bdd8ce;font:600 12px/1.3 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
-.calendar .day{border-color:#d4e5de}
-.calendar .daynum{background:#eff7f3;color:#315f54;border-color:#d4e5de;font:500 12px/1.3 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
-.calendar .day.outside{background:#fbfdfc;color:#a8bdb5}
+.calendar{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;border-color:#c6dce8}
+.calendar-toolbar{background:#e6f1f8;border-bottom-color:#c6dce8}
+.calendar-toolbar .month-control h2{color:#163250}
+.calendar-toolbar .month-control button{border-color:#c6dce8;color:#163250}
+.calendar .weekday{background:#e6f1f8;color:#163250;border-color:#c6dce8;font:600 12px/1.3 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+.calendar .day{border-color:#d6e7e9}
+.calendar .daynum{background:#eaf5ef;color:#1c5874;border-color:#d6e7e9;font:500 12px/1.3 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+.calendar .day.outside{background:#fbfdfc;color:#aabdc7}
 .calendar .event{font:12px/1.35 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
-.calendar .event strong{color:#176b5c;font:500 12px/1.35 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
-.calendar .event.more{color:#52796d}
-.calendar .schedule-line{display:flex;align-items:baseline;gap:4px;background:#edf7f2;border-left:3px solid #4c9d84;border-radius:6px;padding:4px 6px;margin:4px 3px;box-shadow:0 1px 3px #17493b12;white-space:normal;overflow-wrap:anywhere}
-.calendar .schedule-time{color:#176b5c;font-weight:700;white-space:nowrap}
+.calendar .event strong{color:#1d74a9;font:500 12px/1.35 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+.calendar .event.more{color:#607e8c}
+.calendar .schedule-line{display:flex;align-items:baseline;gap:4px;background:#e7f6ef;border-left:3px solid #0daf74;border-radius:6px;padding:4px 6px;margin:4px 3px;box-shadow:0 1px 3px #17493b12;white-space:normal;overflow-wrap:anywhere}
+.calendar .schedule-time{color:#1d74a9;font-weight:700;white-space:nowrap}
 .calendar .schedule-separator{color:#678b7e;font-weight:500}
-.calendar .schedule-names{color:#24483f;font-weight:500}
+.calendar .schedule-names{color:#153b52;font-weight:500}
 .calendar .schedule-line span{display:inline!important;font:inherit}
-.calendar .day .schedule-line:hover{background:#dff0e8}
+.calendar .day .schedule-line:hover{background:#e7f6ef}
 
 @page{size:landscape;margin:8mm}
 @media print{
@@ -234,7 +235,7 @@ td strong{font-size:13px}
   .card{border:0;border-radius:0;box-shadow:none;overflow:visible}
   .calendar-toolbar{display:block;padding:0 0 7px;border:0;background:#fff}
   .calendar-toolbar .month-control{justify-content:center}
-  .calendar-toolbar .month-control h2{font-size:18pt;color:#155b50}
+  .calendar-toolbar .month-control h2{font-size:18pt;color:#163250}
   .calendar{display:grid!important;grid-template-columns:repeat(7,minmax(0,1fr))!important;overflow:visible!important;border-color:#9dbdb1}
   .calendar .weekday,.calendar .daynum{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
   .calendar .day{min-height:24mm;break-inside:avoid;background:#fff}
@@ -243,10 +244,10 @@ td strong{font-size:13px}
 
 .monthly-tools{display:grid;grid-template-columns:minmax(115px,.8fr) minmax(115px,.8fr) minmax(170px,1.4fr) minmax(125px,.8fr) auto;gap:12px;align-items:end;padding:16px 18px;border-bottom:1px solid var(--line);background:#f8fbf9}
 .monthly-table{min-width:560px}
-.monthly-table th{background:#e4f1eb;color:#205d50;text-transform:none;letter-spacing:0}
+.monthly-table th{background:#e6f1f8;color:#205d50;text-transform:none;letter-spacing:0}
 .monthly-table td{padding:9px 16px}
-.shift-choice{display:flex;align-items:center;gap:8px;color:#315f54}
-.shift-choice input{accent-color:#087f78;width:16px;height:16px}
+.shift-choice{display:flex;align-items:center;gap:8px;color:#1c5874}
+.shift-choice input{accent-color:#1d74a9;width:16px;height:16px}
 .monthly-create{white-space:nowrap}
 .monthly-tools input{min-height:39px}
 @media(max-width:900px){.monthly-tools{grid-template-columns:1fr 1fr}.monthly-create{grid-column:1/-1}}
@@ -323,23 +324,22 @@ td strong{font-size:13px}
 
 /* Acesso local e tela de entrada */
 body:not(.authenticated):not(.offline-mode)>.app{visibility:hidden}
-.login-screen{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:24px;background:radial-gradient(ellipse at 15% 15%,#dff3ef 0,transparent 38%),linear-gradient(135deg,#f5f8f7,#eaf2f1)}
+.login-screen{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:24px;background:radial-gradient(ellipse at 15% 15%,#e6f1f8 0,transparent 38%),linear-gradient(135deg,#f4f8fa,#eaf1f6)}
 body.authenticated .login-screen,body.offline-mode .login-screen{display:none}
 .login-card{width:min(100%,440px);background:#fff;border:1px solid var(--line);border-radius:20px;padding:34px;box-shadow:0 24px 70px #183b461c}
-.login-brand{display:flex;align-items:center;gap:13px;margin-bottom:28px}
-.login-brand .logo{height:48px;width:48px}
-.login-brand strong{display:block;font-size:20px;letter-spacing:.45px}.login-brand small{display:block;color:var(--muted);font-size:11px;margin-top:2px}
+.login-brand{display:flex;align-items:center;justify-content:center;margin-bottom:18px}
+.login-lockup{display:block;width:min(100%,300px);height:auto;object-fit:contain}
 .login-card h1{font-size:25px;letter-spacing:-.5px;margin:0 0 6px}
 .login-subtitle{font-size:13px;color:var(--muted);margin:0 0 24px}
 .login-field{display:grid;gap:6px;margin:15px 0}
 .login-field label{font-size:12px;font-weight:650;color:#40545c}
-.login-field input{width:100%;border:1px solid #dce6e4;border-radius:9px;padding:12px 13px;color:var(--ink);outline:none}
-.login-field input:focus{border-color:var(--teal);box-shadow:0 0 0 3px #087f7818}
+.login-field input{width:100%;border:1px solid #dce7eb;border-radius:9px;padding:12px 13px;color:var(--ink);outline:none}
+.login-field input:focus{border-color:var(--teal);box-shadow:0 0 0 3px #1d74a918}
 .login-submit{width:100%;margin-top:5px;padding:12px;border:0;border-radius:9px;background:var(--teal);color:#fff;font-weight:700}
 .login-forgot{display:block;margin:15px auto 0;background:none;border:0;color:var(--teal);font-size:13px;font-weight:650}
 .login-separator{display:flex;align-items:center;gap:12px;margin:23px 0;color:#93a2a6;font-size:11px}
 .login-separator:before,.login-separator:after{content:"";height:1px;background:var(--line);flex:1}
-.login-local{width:100%;padding:11px;border:1px solid #cbd9d7;border-radius:9px;background:#f7faf9;color:#29464e;font-weight:650}
+.login-local{width:100%;padding:11px;border:1px solid #c6dce8;border-radius:9px;background:#f7faf9;color:#29464e;font-weight:650}
 .login-local[hidden]{display:none}
 .login-note{margin:15px 0 0;text-align:center;color:#859397;font-size:11px;line-height:1.5}
 .login-feedback{min-height:18px;margin:10px 0 0;color:#a94f4f;font-size:12px;text-align:center}
@@ -370,7 +370,7 @@ body.authenticated .login-screen,body.offline-mode .login-screen{display:none}
 <body>
 <section class="login-screen" id="login-screen" aria-label="Acesso à Gestão de plantões">
   <div class="login-card">
-    <div class="login-brand"><img class="logo logo-image" src="./icons/brand-mark.png" alt=""><div><strong>PLANTÃO<span class="brand-plus">+</span></strong><small>Gestão Inteligente de Turnos</small></div></div>
+    <div class="login-brand"><img class="login-lockup" src="./icons/brand-lockup.png" alt="PLANTÃO+ — Gestão Inteligente de Turnos"></div>
     <h1 id="login-title">Acesse sua conta</h1>
     <p class="login-subtitle" id="login-subtitle">Entre com seu e-mail e senha para continuar.</p>
     <form id="login-form" onsubmit="return authUI.signIn(event)">
@@ -412,8 +412,8 @@ body.authenticated .login-screen,body.offline-mode .login-screen{display:none}
     <header class="topbar">
       <div class="crumb">Gestão da equipe&nbsp; / &nbsp;<strong id="crumb">Enfermeiros</strong></div>
       <div class="topbar-right">
-        <span id="save-status" style="font-size:12px;color:#087f78;display:flex;align-items:center;gap:6px;background:#e5f5f2;padding:4px 10px;border-radius:20px;font-weight:500">
-          <span style="width:7px;height:7px;border-radius:50%;background:#087f78;display:inline-block"></span> Salvo no navegador
+        <span id="save-status" style="font-size:12px;color:#1d74a9;display:flex;align-items:center;gap:6px;background:#e6f1f8;padding:4px 10px;border-radius:20px;font-weight:500">
+          <span style="width:7px;height:7px;border-radius:50%;background:#1d74a9;display:inline-block"></span> Salvo no navegador
         </span>
         <span class="today" id="today"></span>
         <div class="avatar">E</div>
@@ -485,7 +485,7 @@ window.authUI={
     form.onsubmit=async(event)=>{
       event.preventDefault();
       if(!window.firebaseReady){feedback.textContent='Não foi possível carregar o Firebase. Atualize a página e tente novamente.';return false}
-      try{await window.firebaseAuth.sendPasswordResetEmail(document.querySelector('#reset-email').value.trim());feedback.style.color='#087f78';feedback.textContent='Se o e-mail estiver cadastrado, você receberá as instruções de recuperação.'}
+      try{await window.firebaseAuth.sendPasswordResetEmail(document.querySelector('#reset-email').value.trim());feedback.style.color='#1d74a9';feedback.textContent='Se o e-mail estiver cadastrado, você receberá as instruções de recuperação.'}
       catch(error){console.error('Falha na recuperação Firebase:',error?.code);feedback.style.color='#a94f4f';feedback.textContent=authErrorMessage(error)}
       return false;
     };
@@ -617,10 +617,10 @@ if('serviceWorker' in navigator&&location.protocol==='https:'){
     const el=$('#save-status');
     if(!el) return;
     const styles={
-      teal:{bg:'#e5f5f2',color:'#087f78',dot:'#087f78'},
+      teal:{bg:'#e6f1f8',color:'#1d74a9',dot:'#1d74a9'},
       gold:{bg:'#fff3dc',color:'#b27b18',dot:'#e1a947'},
       red:{bg:'#fcf0f0',color:'#a94f4f',dot:'#b85454'}
-    }[type]||{bg:'#e5f5f2',color:'#087f78',dot:'#087f78'};
+    }[type]||{bg:'#e6f1f8',color:'#1d74a9',dot:'#1d74a9'};
     el.style.background=styles.bg;
     el.style.color=styles.color;
     el.innerHTML=`<span style="width:7px;height:7px;border-radius:50%;background:${styles.dot};display:inline-block"></span> ${esc(msg)}`;
@@ -736,7 +736,7 @@ if('serviceWorker' in navigator&&location.protocol==='https:'){
             assignedIds=r.assigned?.length?r.assigned:db.nurses.filter(n=>db.availability[`${n.id}:${s.id}`]==='yes').slice(0,s.vacancies||2).map(n=>n.id),
             assignedNurses=assignedIds.map(x=>db.nurses.find(n=>n.id===x)).filter(Boolean),
             nurseListHtml=assignedNurses.length
-              ? assignedNurses.map(n=>`<span class="tag" style="background:#e5f5f2;color:#087f78;font-weight:600;margin:2px 4px 2px 0;display:inline-flex;align-items:center;gap:5px">${esc(n.name)}<button type="button" onclick="app.removeNurseFromShift('${s.id}','${n.id}')" style="border:0;background:transparent;color:#b85454;font-size:14px;font-weight:bold;cursor:pointer;padding:0 2px;line-height:1;display:inline-flex;align-items:center;justify-content:center" title="Remover ${esc(n.name)} deste plantão">×</button></span>`).join('')
+              ? assignedNurses.map(n=>`<span class="tag" style="background:#e6f1f8;color:#1d74a9;font-weight:600;margin:2px 4px 2px 0;display:inline-flex;align-items:center;gap:5px">${esc(n.name)}<button type="button" onclick="app.removeNurseFromShift('${s.id}','${n.id}')" style="border:0;background:transparent;color:#b85454;font-size:14px;font-weight:bold;cursor:pointer;padding:0 2px;line-height:1;display:inline-flex;align-items:center;justify-content:center" title="Remover ${esc(n.name)} deste plantão">×</button></span>`).join('')
               : `<span class="muted">Sem profissional alocado</span>`;
         return `<tr>
           <td><strong>${esc(s.code||'')}</strong></td>
@@ -968,15 +968,15 @@ if('serviceWorker' in navigator&&location.protocol==='https:'){
 
     let bandY=H-M-BH;
     fill(M,bandY,GW,BH,'#E9F5F1');
-    stroke(M,bandY,GW,BH,'#C7DDD5');
-    txt(M+8,bandY+9,16,formatMonthYear(month),'#155B50','F2');
+    stroke(M,bandY,GW,BH,'#c6dce8');
+    txt(M+8,bandY+9,16,formatMonthYear(month),'#163250','F2');
 
     let weekdayY=bandY-WH,days=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     days.forEach((d,i)=>{
       let x=M+i*CW;
       fill(x,weekdayY,CW,WH,'#DCEFE8');
-      stroke(x,weekdayY,CW,WH,'#BDD8CE');
-      txt(x+5,weekdayY+6,8,d,'#155B50','F2');
+      stroke(x,weekdayY,CW,WH,'#c6dce8');
+      txt(x+5,weekdayY+6,8,d,'#163250','F2');
     });
 
     let first=new Date(month.getFullYear(),month.getMonth(),1),
@@ -991,9 +991,9 @@ if('serviceWorker' in navigator&&location.protocol==='https:'){
           x=M+col*CW,y=weekdayY-(row+1)*CH;
 
       fill(x,y,CW,CH,'#FFFFFF');
-      stroke(x,y,CW,CH,'#C7DDD5');
+      stroke(x,y,CW,CH,'#c6dce8');
       fill(x,y+CH-14,CW,14,'#EFF7F3');
-      commands.push(`${pdfRgb('#D4E5DE')} RG 0.5 w ${x.toFixed(2)} ${(y+CH-14).toFixed(2)} m ${(x+CW).toFixed(2)} ${(y+CH-14).toFixed(2)} l S`);
+      commands.push(`${pdfRgb('#d6e7e9')} RG 0.5 w ${x.toFixed(2)} ${(y+CH-14).toFixed(2)} m ${(x+CW).toFixed(2)} ${(y+CH-14).toFixed(2)} l S`);
       txt(x+CW-16,y+CH-10,7,String(d.getDate()),d.getMonth()===month.getMonth()?'#315F54':'#A8BDB5');
 
       let shifts=db.shifts.filter(s=>{
@@ -1605,3 +1605,6 @@ if('serviceWorker' in navigator&&location.protocol==='https:'){
 </script>
 </body>
 </html>
+
+
+

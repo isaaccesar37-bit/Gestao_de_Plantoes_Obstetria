@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gestao-plantao-offline-v4';
+const CACHE_NAME = 'gestao-plantao-offline-v8';
 const FIREBASE_FILES = [
   'https://www.gstatic.com/firebasejs/13.0.0/firebase-app-compat.js',
   'https://www.gstatic.com/firebasejs/13.0.0/firebase-auth-compat.js',
@@ -11,6 +11,7 @@ self.addEventListener('install', event => {
     new Request(root.href),
     new Request(new URL('./index.html', self.registration.scope).href),
     new Request(new URL('./manifest.webmanifest', self.registration.scope).href),
+    new Request(new URL('./icons/brand-lockup.png', self.registration.scope).href),
     new Request(new URL('./icons/brand-mark.png', self.registration.scope).href),
     new Request(new URL('./icons/icon-192.png', self.registration.scope).href),
     new Request(new URL('./icons/icon-512.png', self.registration.scope).href),
