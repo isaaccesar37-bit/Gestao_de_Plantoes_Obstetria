@@ -402,7 +402,7 @@ window.firebaseReady=false;
 try{
   if(typeof firebase!=='undefined'){
     firebase.initializeApp({
-      apiKey:'AIzaSyBFG6hqg5T0zC_r5U0c8kwT5e7K88j1zWs',
+      apiKey:'AIzaSyBFG6hqg5TOzC_r5U0c8kwT5e7K88j1zWs',
       authDomain:'gestao-de-plantoes-f7a07.firebaseapp.com',
       projectId:'gestao-de-plantoes-f7a07',
       appId:'1:425208993087:web:4ebe7f04e91264ab866f8a'
@@ -421,9 +421,14 @@ function authErrorMessage(error){
     'auth/wrong-password':'E-mail ou senha incorretos.',
     'auth/too-many-requests':'Muitas tentativas. Aguarde alguns minutos e tente novamente.',
     'auth/network-request-failed':'Sem conexão com a internet. Verifique a conexão e tente novamente.',
-    'auth/operation-not-allowed':'O login por e-mail e senha não está habilitado no Firebase.'
+    'auth/operation-not-allowed':'O login por e-mail e senha não está habilitado no Firebase.',
+    'auth/invalid-api-key':'A chave de configuração do Firebase está inválida. Confira a chave no app Web do projeto.',
+    'auth/api-key-not-valid':'A chave de configuração do Firebase está inválida. Confira a chave no app Web do projeto.',
+    'auth/app-not-authorized':'Este site não está autorizado a usar a configuração do Firebase.',
+    'auth/unauthorized-domain':'O domínio do site precisa estar autorizado no Firebase Authentication.'
   };
-  return messages[error?.code]||'Não foi possível concluir. Confira os dados e tente novamente.';
+  const code=error?.code||'erro-sem-código';
+  return `${messages[code]||'Não foi possível concluir. Confira a configuração do Firebase e tente novamente.'} (${code})`;
 }
 
 window.authUI={
@@ -434,7 +439,7 @@ window.authUI={
     feedback.textContent='';button.disabled=true;
     try{
       await window.firebaseAuth.signInWithEmailAndPassword(document.querySelector('#login-email').value.trim(),document.querySelector('#login-password').value);
-    }catch(error){feedback.textContent=authErrorMessage(error)}
+    }catch(error){console.error('Falha no login Firebase:',error?.code);feedback.textContent=authErrorMessage(error)}
     finally{button.disabled=false}
     return false;
   },
@@ -446,7 +451,7 @@ window.authUI={
       event.preventDefault();
       if(!window.firebaseReady){feedback.textContent='Não foi possível carregar o Firebase. Atualize a página e tente novamente.';return false}
       try{await window.firebaseAuth.sendPasswordResetEmail(document.querySelector('#reset-email').value.trim());feedback.style.color='#087f78';feedback.textContent='Se o e-mail estiver cadastrado, você receberá as instruções de recuperação.'}
-      catch(error){feedback.style.color='#a94f4f';feedback.textContent=authErrorMessage(error)}
+      catch(error){console.error('Falha na recuperação Firebase:',error?.code);feedback.style.color='#a94f4f';feedback.textContent=authErrorMessage(error)}
       return false;
     };
     forgot.textContent='Voltar ao login';forgot.onclick=()=>location.reload();feedback.textContent='';
