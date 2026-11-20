@@ -329,10 +329,10 @@ td strong{font-size:13px}
   .toast{width:max-content;max-width:calc(100vw - 24px);text-align:center}
 }
 
-/* Acesso local e tela de entrada */
-body:not(.authenticated):not(.offline-mode)>.app{visibility:hidden}
+/* Tela de entrada: somente contas autenticadas pelo Firebase acessam o app. */
+body:not(.authenticated)>.app{visibility:hidden}
 .login-screen{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:24px;background:radial-gradient(ellipse at 15% 15%,#e6f1f8 0,transparent 38%),linear-gradient(135deg,#f4f8fa,#eaf1f6)}
-body.authenticated .login-screen,body.offline-mode .login-screen{display:none}
+body.authenticated .login-screen{display:none}
 .login-card{width:min(100%,440px);background:#fff;border:1px solid var(--line);border-radius:20px;padding:34px;box-shadow:0 24px 70px #183b461c}
 .login-brand{display:flex;align-items:center;justify-content:center;margin-bottom:18px}
 .login-lockup{display:block;width:min(100%,300px);height:auto;object-fit:contain}
@@ -344,10 +344,6 @@ body.authenticated .login-screen,body.offline-mode .login-screen{display:none}
 .login-field input:focus{border-color:var(--teal);box-shadow:0 0 0 3px #1d74a918}
 .login-submit{width:100%;margin-top:5px;padding:12px;border:0;border-radius:9px;background:var(--teal);color:#fff;font-weight:700}
 .login-forgot{display:block;margin:15px auto 0;background:none;border:0;color:var(--teal);font-size:13px;font-weight:650}
-.login-separator{display:flex;align-items:center;gap:12px;margin:23px 0;color:#93a2a6;font-size:11px}
-.login-separator:before,.login-separator:after{content:"";height:1px;background:var(--line);flex:1}
-.login-local{width:100%;padding:11px;border:1px solid #c6dce8;border-radius:9px;background:#f7faf9;color:#29464e;font-weight:650}
-.login-local[hidden]{display:none}
 .login-note{margin:15px 0 0;text-align:center;color:#859397;font-size:11px;line-height:1.5}
 .login-feedback{min-height:18px;margin:10px 0 0;color:#a94f4f;font-size:12px;text-align:center}
 .login-logout{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 10px;color:#52656c;font-size:12px;font-weight:600}
@@ -360,7 +356,7 @@ body.authenticated .login-screen,body.offline-mode .login-screen{display:none}
   .login-brand{margin-bottom:22px;gap:11px}
   .login-card h1{font-size:23px}
   .login-subtitle{margin-bottom:20px}
-  .login-field input,.login-submit,.login-local{min-height:46px}
+  .login-field input,.login-submit{min-height:46px}
   .login-forgot{min-height:44px;padding:10px}
   .content{padding:16px 10px}
   .card{border-radius:11px}
@@ -387,9 +383,6 @@ body.authenticated .login-screen,body.offline-mode .login-screen{display:none}
     </form>
     <button class="login-forgot" id="forgot-button" type="button" onclick="authUI.showForgot()">Esqueci a senha</button>
     <div class="login-feedback" id="login-feedback" aria-live="polite"></div>
-    <div class="login-separator"><span>ou</span></div>
-    <button class="login-local" id="login-offline" type="button" onclick="authUI.enterOffline()">Uso Offline</button>
-    <p class="login-note" id="login-note">No modo offline, os dados ficam somente no cache deste navegador e não são enviados nem sincronizados com o Firebase.</p>
     <button class="login-forgot install-app-button" id="install-app" type="button" hidden>Instalar app</button>
     <p class="login-note" id="install-note" aria-live="polite" hidden></p>
   </div>
@@ -421,7 +414,7 @@ body.authenticated .login-screen,body.offline-mode .login-screen{display:none}
       <div class="crumb">Gestão da equipe&nbsp; / &nbsp;<strong id="crumb">Enfermeiros</strong></div>
       <div class="topbar-right">
         <span id="save-status" style="font-size:12px;color:#1d74a9;display:flex;align-items:center;gap:6px;background:#e6f1f8;padding:4px 10px;border-radius:20px;font-weight:500">
-          <span style="width:7px;height:7px;border-radius:50%;background:#1d74a9;display:inline-block"></span> Salvo no navegador
+          <span style="width:7px;height:7px;border-radius:50%;background:#1d74a9;display:inline-block"></span> Aguardando Firebase
         </span>
         <span class="today" id="today"></span>
         <div class="avatar">E</div>
@@ -438,9 +431,6 @@ body.authenticated .login-screen,body.offline-mode .login-screen{display:none}
 <script src="https://www.gstatic.com/firebasejs/13.0.0/firebase-auth-compat.js" crossorigin="anonymous"></script>
 <script src="https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore-compat.js" crossorigin="anonymous"></script>
 <script>
-const OFFLINE_KEY='escala-clara-offline-v1';
-window.offlineMode=sessionStorage.getItem('escala-clara-offline-mode')==='1';
-if(window.offlineMode)document.body.classList.add('offline-mode');
 window.firebaseReady=false;
 try{
   if(typeof firebase!=='undefined'){
@@ -499,15 +489,23 @@ window.authUI={
     };
     forgot.textContent='Voltar ao login';forgot.onclick=()=>location.reload();feedback.textContent='';
   },
-  enterOffline(){if(window.app)window.app.enterOfflineMode()},
   async logout(){
-    if(window.offlineMode){sessionStorage.removeItem('escala-clara-offline-mode');window.offlineMode=false}
-    else try{if(window.firebaseAuth)await window.firebaseAuth.signOut()}catch(error){console.error('Falha ao sair.',error)}
-    document.body.classList.remove('authenticated','offline-mode');location.reload();
+    try{if(window.firebaseAuth)await window.firebaseAuth.signOut()}catch(error){console.error('Falha ao sair.',error)}
+    document.body.classList.remove('authenticated');location.reload();
   }
 };
-if('serviceWorker' in navigator&&location.protocol==='https:'){
-  window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(error=>console.warn('Cache offline indisponível.',error)));
+if('serviceWorker' in navigator){
+  window.addEventListener('load',async()=>{
+    try{
+      const registrations=await navigator.serviceWorker.getRegistrations();
+      const appScope=new URL('./',location.href).href;
+      await Promise.all(registrations.filter(registration=>registration.scope===appScope).map(registration=>registration.unregister()));
+      if('caches' in window){
+        const names=await caches.keys();
+        await Promise.all(names.filter(name=>name.startsWith('gestao-plantao-')).map(name=>caches.delete(name)));
+      }
+    }catch(error){console.warn('Não foi possível remover o cache offline antigo.',error)}
+  });
 }
 (()=>{
   const button=document.querySelector('#install-app'),note=document.querySelector('#install-note');
@@ -527,7 +525,6 @@ if('serviceWorker' in navigator&&location.protocol==='https:'){
 })();
 (()=>{
   'use strict';
-  const KEY='escala-clara-v1';
   const DEFAULT_LINK='https://docs.google.com/forms/d/e/1FAIpQLScdKzwGGrK8FA7Ubb-Sg3xEmmJUKFbB0P0v9ly6w0WHknD27Q/viewform?usp=dialog';
   let db=load(),
       cloudUser=null,
@@ -561,38 +558,16 @@ if('serviceWorker' in navigator&&location.protocol==='https:'){
   }
 
   function load(){
-    try{
-      let raw=window.offlineMode
-        ?(localStorage.getItem(OFFLINE_KEY)||sessionStorage.getItem(OFFLINE_KEY)||localStorage.getItem(KEY)||sessionStorage.getItem(KEY))
-        :(localStorage.getItem(KEY)||sessionStorage.getItem(KEY));
-      return normalizeDb(JSON.parse(raw)||{});
-    }catch{
-      return normalizeDb({externalLink:DEFAULT_LINK});
-    }
+    return normalizeDb({externalLink:DEFAULT_LINK});
   }
 
   function save(){
-    const serialized=JSON.stringify(db);
-    if(window.offlineMode){
-      try{localStorage.setItem(OFFLINE_KEY,serialized);updateSaveBadge('Salvo somente no cache local','gold')}
-      catch(e){try{sessionStorage.setItem(OFFLINE_KEY,serialized);updateSaveBadge('Salvo na sessão offline','gold')}
-        catch(err){updateSaveBadge('Cache offline indisponível','red');toast('Não foi possível salvar neste navegador.')}}
+    if(!cloudUser||!cloudDataReady||!window.firebaseCloudDb){
+      updateSaveBadge('Aguardando conexão com Firebase','gold');
       return;
     }
-    let savedLocally=false;
-    try{
-      localStorage.setItem(KEY,serialized);
-      savedLocally=true;
-    }catch(e){
-      try{
-        sessionStorage.setItem(KEY,JSON.stringify(db));
-        savedLocally=true;
-      }catch(err){
-        updateSaveBadge('Erro ao salvar no cache','red');
-      }
-    }
+    const serialized=JSON.stringify(db);
     if(cloudUser&&cloudDataReady&&window.firebaseCloudDb){
-      try{localStorage.setItem(OFFLINE_KEY,serialized)}catch(e){}
       clearTimeout(cloudSaveTimer);
       updateSaveBadge('Sincronizando com Firebase…','gold');
       cloudSaveTimer=setTimeout(async()=>{
@@ -607,8 +582,6 @@ if('serviceWorker' in navigator&&location.protocol==='https:'){
           toast('Não foi possível sincronizar os dados com o Firebase.');
         }
       },700);
-    }else if(savedLocally){
-      updateSaveBadge('Salvo no navegador','teal');
     }
   }
 
@@ -856,6 +829,14 @@ if('serviceWorker' in navigator&&location.protocol==='https:'){
         hospital=[...new Set((db.shifts||[]).map(s=>s.hospital||s.unit).filter(Boolean))][0]||'hospital';
     $('#view').innerHTML=header('Inserir/Importar dados','Cole diretamente as linhas da sua planilha ou preencha a tabela.',`<button class="button" onclick="app.addManualRow()">＋ Adicionar linha</button>`)+`
     <div class="card">
+      <div class="card-head"><h2>Dados da paciente</h2><small>Cadastro em lote a partir de planilha</small></div>
+      <div class="paste-panel">
+        <label for="patient-paste"><strong>Cole aqui as informações dos pacientes</strong><span>Use colunas separadas por TAB e inclua os nomes dos campos na primeira linha.</span></label>
+        <textarea id="patient-paste" rows="5" placeholder="Nome do paciente[TAB]CPF[TAB]Idade[TAB]Telefone[TAB]E-mail[TAB]Risco">${esc(db.patientPasteDraft||'')}</textarea>
+        <button class="button primary" onclick="app.importPatientPaste()">Importar pacientes</button>
+      </div>
+    </div>
+    <div class="card">
       <div class="card-head"><h2>Disponibilidade da equipe</h2><small>As respostas serão integradas à escala</small></div>
       <datalist id="nurse-options">${(db.nurses||[]).map(n=>`<option value="${esc(n.name||'')}"></option>`).join('')}</datalist>
       <div class="paste-panel">
@@ -881,6 +862,7 @@ if('serviceWorker' in navigator&&location.protocol==='https:'){
 
   $('#view').addEventListener('input',e=>{
     if(e.target.matches('.manual-name,.manual-available,.manual-shifts-text,#manual-paste')) saveManualDraft();
+    if(e.target.matches('#patient-paste')) db.patientPasteDraft=e.target.value;
   });
   $('#view').addEventListener('change',e=>{
     if(e.target.matches('.manual-name,.manual-available,.manual-shifts-text,#manual-paste')) saveManualDraft();
@@ -1160,22 +1142,6 @@ if('serviceWorker' in navigator&&location.protocol==='https:'){
   }
 
   window.app={
-    enterOfflineMode(){
-      if(!window.offlineMode){
-        try{
-          const cached=localStorage.getItem(OFFLINE_KEY)||sessionStorage.getItem(OFFLINE_KEY);
-          if(cached)db=normalizeDb(JSON.parse(cached));
-          else localStorage.setItem(OFFLINE_KEY,JSON.stringify(db));
-        }catch(error){console.warn('Não foi possível ler o cache offline.',error)}
-      }
-      window.offlineMode=true;
-      try{sessionStorage.setItem('escala-clara-offline-mode','1')}catch(e){}
-      document.body.classList.remove('authenticated');
-      document.body.classList.add('offline-mode');
-      updateSaveBadge('Modo offline · cache local','gold');
-      render();
-      toast('Uso Offline ativado. Os dados não serão enviados ao Firebase.');
-    },
     setPlantaoMonthParts(){
       let mo=document.querySelector('#monthlyMonth').value,yr=document.querySelector('#monthlyYear').value;
       plantaoMonth=yr+'-'+mo;
@@ -1253,6 +1219,62 @@ if('serviceWorker' in navigator&&location.protocol==='https:'){
       box.value='';
       saveManualDraft();
       toast(`${rows.length} linha(s) importada(s)`);
+    },
+
+    importPatientPaste(){
+      const box=document.querySelector('#patient-paste'),text=(box?.value||'').replace(/^\uFEFF/, '').trim();
+      if(!text){toast('Cole as informações dos pacientes no campo acima primeiro.');return}
+      const lines=text.replace(/\r/g,'').split('\n').filter(line=>line.trim());
+      const normalizeHeader=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR').replace(/[^a-z0-9]+/g,' ').trim();
+      const aliases={
+        name:['nome','paciente','nome paciente','nome da paciente','nome completo','nome completo da paciente'],
+        cpf:['cpf'],age:['idade'],birthDate:['data de nascimento','nascimento'],babyName:['nome do bebe','bebe'],
+        gestationalAge:['idade gestacional','ig na contratacao','ig contratacao'],contractDate:['data da contratacao','contratacao'],
+        dumDate:['dum','data da ultima menstruacao'],firstUltrasoundDate:['data do primeiro ultrassom','data do 1o ultrassom','primeiro ultrassom'],
+        firstUltrasoundGA:['ig do ultrassom','ig do primeiro ultrassom','ig do 1o ultrassom'],dueDate:['dpp','data provavel do parto'],
+        prenatalConsultDate:['consulta de pre natal','data da consulta pre natal'],prenatalConsultText:['observacoes consulta pre natal','consulta pre natal observacoes'],
+        postpartumConsultDate:['consulta de pos parto','data da consulta pos parto'],postpartumConsultText:['observacoes consulta pos parto','consulta pos parto observacoes'],
+        risk:['risco','classificacao de risco'],bloodGroup:['grupo sanguineo','tipo sanguineo'],comorbidities:['comorbidades'],allergies:['alergias'],
+        priorSurgeries:['cirurgias previas','cirurgias'],maternity:['maternidade'],maternityBackup:['maternidade plano b','maternidade backup'],
+        healthPlan:['plano de saude','convenio'],address:['endereco'],prenatalDoctor:['medico pre natalista','medico prenatalista'],photographer:['fotografa','fotografo'],doula:['doula'],
+        companionRelation:['parentesco acompanhante','grau de parentesco acompanhante'],companionName:['nome do acompanhante','acompanhante'],companionPhone:['contato acompanhante','telefone acompanhante'],
+        paymentMethod:['forma de pagamento','pagamento'],phone:['telefone','celular','contato telefonico'],instagram:['instagram'],email:['email','e mail'],
+        nursePrimary:['enfermeiro referencia','enfermeira referencia','referencia'],nurseBackup:['enfermeiro backup','enfermeira backup','backup'],notes:['observacoes','outros','observacoes gerais']
+      };
+      const headerMap=new Map();
+      Object.entries(aliases).forEach(([field,names])=>names.forEach(name=>headerMap.set(normalizeHeader(name),field)));
+      const splitLine=line=>line.includes('\t')?line.split('\t'):line.split(';');
+      const headers=splitLine(lines[0]).map(value=>headerMap.get(normalizeHeader(value))||null);
+      if(!headers.includes('name')){toast('A primeira linha precisa ter uma coluna “Nome” ou “Nome do paciente”.');return}
+      const dateFields=new Set(['birthDate','contractDate','dumDate','firstUltrasoundDate','dueDate','prenatalConsultDate','postpartumConsultDate']);
+      const parseDate=value=>{
+        const v=String(value||'').trim();if(!v)return '';
+        if(/^\d{4}-\d{2}-\d{2}$/.test(v))return v;
+        const m=v.match(/^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4})$/);
+        return m?`${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`:'';
+      };
+      const patients=lines.slice(1).map(line=>{
+        const cells=splitLine(line),patient={id:id(),shiftIds:[]};
+        headers.forEach((field,index)=>{
+          if(!field)return;
+          let value=String(cells[index]||'').trim();if(!value)return;
+          if(dateFields.has(field))value=parseDate(value);
+          if(field==='age')value=value.replace(/\D/g,'');
+          if(field==='risk'){
+            const risk=normalizeHeader(value);
+            value=['alto','alto risco','high'].includes(risk)?'high':['baixo','baixo risco','low'].includes(risk)?'low':'';
+          }
+          if(field==='nursePrimary'||field==='nurseBackup'){
+            const nurse=(db.nurses||[]).find(item=>normalizeHeader(item.name)===normalizeHeader(value));value=nurse?.id||'';
+          }
+          if(aliases[field])patient[field]=value;
+        });
+        return patient;
+      }).filter(patient=>patient.name);
+      if(!patients.length){toast('Nenhum paciente com nome foi encontrado nas linhas coladas.');return}
+      db.patients=[...(db.patients||[]),...patients];
+      db.patientPasteDraft='';
+      save();render();toast(`${patients.length} paciente(s) importado(s)`);
     },
 
     removeManualRow(button){
@@ -1755,11 +1777,8 @@ if('serviceWorker' in navigator&&location.protocol==='https:'){
 
   render();
 
-  if(window.offlineMode)updateSaveBadge('Modo offline · cache local','gold');
-
   if(window.firebaseReady){
     window.firebaseAuth.onAuthStateChanged(async user=>{
-      if(window.offlineMode){document.body.classList.remove('authenticated');return}
       cloudUser=user||null;
       cloudDataReady=false;
       if(!user){document.body.classList.remove('authenticated');return}
@@ -1772,8 +1791,6 @@ if('serviceWorker' in navigator&&location.protocol==='https:'){
           const payload=JSON.stringify(db);
           await docRef.set({payload,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
         }
-        const offlineCopy=JSON.stringify(db);
-        try{localStorage.setItem(OFFLINE_KEY,offlineCopy)}catch(e){try{sessionStorage.setItem(OFFLINE_KEY,offlineCopy)}catch(err){}}
         cloudDataReady=true;
         document.body.classList.add('authenticated');
         updateSaveBadge('Conectado ao Firebase','teal');
