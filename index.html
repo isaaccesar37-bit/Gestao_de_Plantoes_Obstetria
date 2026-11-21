@@ -539,6 +539,7 @@ if('serviceWorker' in navigator){
       plantaoMonth=new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0'),
       monthlyHospital='',
       monthlyVacancies=2,
+      sortPatientsByDueDate=false,
       patientSheetTitleBefore=null,
       auditSnapshot=null,
       lastCloudDb=null,
@@ -869,9 +870,13 @@ if('serviceWorker' in navigator){
   }
 
   function renderPatients(){
-    let patients=[...(db.patients||[])].sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'pt-BR'));
+    const byName=(a,b)=>String(a.name||'').localeCompare(String(b.name||''),'pt-BR');
+    let patients=[...(db.patients||[])].sort(sortPatientsByDueDate?(a,b)=>{
+      const dateA=a.dueDate||'9999-12-31',dateB=b.dueDate||'9999-12-31';
+      return String(dateA).localeCompare(String(dateB))||byName(a,b);
+    }:byName);
     $('#view').innerHTML=header('Pacientes','Cadastre as informações e vincule cada paciente a um ou mais plantões.',`<button class="button primary" onclick="app.openPatient()">＋ Nova paciente</button>`)+stats()+`
-    <div class="card"><div class="card-head"><h2>Cadastro de pacientes (${patients.length})</h2><small><span style="color:#b85454;font-weight:700">Vermelho: alto risco</span> · <span style="color:#0daf74;font-weight:700">Verde: baixo risco</span></small></div>
+    <div class="card"><div class="card-head"><h2>Cadastro de pacientes (${patients.length})</h2><div style="display:flex;align-items:center;justify-content:flex-end;gap:14px;flex-wrap:wrap"><label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;white-space:nowrap"><input type="checkbox" ${sortPatientsByDueDate?'checked':''} onchange="app.togglePatientDueDateSort(this.checked)"> Ordenar por DPP</label><small><span style="color:#b85454;font-weight:700">Vermelho: alto risco</span> · <span style="color:#0daf74;font-weight:700">Verde: baixo risco</span></small></div></div>
     ${patients.length?`<div class="table-wrap"><table><thead><tr><th>Paciente</th><th>Dados pessoais</th><th>IG na contratação</th><th>Data da contratação</th><th>DUM / 1º ultrassom / consultas</th><th>DPP</th><th>Risco</th><th>Histórico de saúde</th><th>Maternidade</th><th>Plano e apoio</th><th>Pagamento</th><th>Observações</th><th>Telefone</th><th>Instagram</th><th>E-mail</th><th>Enfermeiro(a) referência</th><th>Backup</th><th>Plantões vinculados</th><th></th></tr></thead><tbody>
       ${patients.map(p=>{let refs=(db.nurses||[]),shifts=(p.shiftIds||[]).map(id=>db.shifts.find(s=>s.id===id)).filter(Boolean),personal=patientInfoList([['CPF',p.cpf],['Idade',p.age],['Nascimento',p.birthDate?dateBR(p.birthDate):''],['Bebê',p.babyName]]),pregnancy=patientInfoList([['DUM',p.dumDate?dateBR(p.dumDate):''],['1º ultrassom',p.firstUltrasoundDate?dateBR(p.firstUltrasoundDate):''],['IG do US',p.firstUltrasoundGA],['Consulta de pré-natal',p.prenatalConsultDate?dateBR(p.prenatalConsultDate):''],['Observações Consulta pré-natal',p.prenatalConsultText],['Consulta de pós parto',p.postpartumConsultDate?dateBR(p.postpartumConsultDate):''],['Observações Consulta pós parto',p.postpartumConsultText]]),health=patientInfoList([['Comorbidades',p.comorbidities],['Alergias',p.allergies],['Cirurgias',p.priorSurgeries],['Grupo sanguíneo',p.bloodGroup]]),support=patientInfoList([['Plano de saúde',p.healthPlan],['Maternidade plano B',p.maternityBackup],['Endereço',p.address],['Médico pré-natalista',p.prenatalDoctor],['Fotógrafa(o)',p.photographer],['Doula',p.doula],['Acompanhante',p.companionName],['Parentesco',p.companionRelation],['Contato acompanhante',p.companionPhone]]);return `<tr>
         <td><strong style="color:${p.risk==='high'?'#b85454':p.risk==='low'?'#0daf74':'#163250'}">${esc(p.name)}</strong></td><td>${personal}</td><td>${esc(p.gestationalAge||'—')}</td><td>${p.contractDate?dateBR(p.contractDate):'—'}</td>
@@ -1282,6 +1287,7 @@ if('serviceWorker' in navigator){
   }
 
   window.app={
+    togglePatientDueDateSort(enabled){sortPatientsByDueDate=!!enabled;renderPatients()},
     setPlantaoMonthParts(){
       let mo=document.querySelector('#monthlyMonth').value,yr=document.querySelector('#monthlyYear').value;
       plantaoMonth=yr+'-'+mo;
