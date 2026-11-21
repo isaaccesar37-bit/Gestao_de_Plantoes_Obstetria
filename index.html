@@ -406,6 +406,7 @@ body.authenticated .login-screen{display:none}
         <button data-page="manual" title="Inserir/Importar dados" aria-label="Inserir/Importar dados"><span class="icon" aria-hidden="true">✎</span><span class="label">Inserir/Importar dados</span></button>
         <button data-page="calendario" title="Calendário" aria-label="Calendário"><span class="icon" aria-hidden="true">▦</span><span class="label">Calendário</span></button>
         <button data-page="dados" title="Importar e Exportar Dados" aria-label="Importar e Exportar Dados"><span class="icon" aria-hidden="true">⇅</span><span class="label">Importar e Exportar Dados</span></button>
+        <button data-page="historico" title="Histórico de edições" aria-label="Histórico de edições"><span class="icon" aria-hidden="true">◷</span><span class="label">Histórico de edições</span></button>
       </nav>
     </div>
   </aside>
@@ -538,7 +539,8 @@ if('serviceWorker' in navigator){
       plantaoMonth=new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0'),
       monthlyHospital='',
       monthlyVacancies=2,
-      patientSheetTitleBefore=null;
+      patientSheetTitleBefore=null,
+      auditSnapshot=null;
 
   const $=s=>document.querySelector(s),
         esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -551,6 +553,7 @@ if('serviceWorker' in navigator){
     x.rosters=x.rosters&&typeof x.rosters==='object'?x.rosters:{};
     x.manualEntries=Array.isArray(x.manualEntries)?x.manualEntries:[];
     x.patients=Array.isArray(x.patients)?x.patients:[];
+    x.editHistory=Array.isArray(x.editHistory)?x.editHistory:[];
     if(!x.externalLink||x.externalLink==='https://forms.google.com'||x.externalLink.includes('1FAIpQLScgV3081gzDz5Ff24UJjRFN3K7UfPLrtTU-rmIZjs4o8DPXEQ'))x.externalLink=DEFAULT_LINK;
     x.adminPassword=x.adminPassword||'admin123';
     x.shifts.forEach((s,i)=>{s.code=s.code||('P'+String(i+1).padStart(3,'0'));s.hospital=s.hospital||s.unit||'';s.vacancies=Number(s.vacancies||2)});
@@ -561,12 +564,62 @@ if('serviceWorker' in navigator){
     return normalizeDb({externalLink:DEFAULT_LINK});
   }
 
+  function getAuditSnapshot(source=db){
+    const clone=value=>JSON.parse(JSON.stringify(value||{}));
+    return {
+      nurses:clone(source.nurses||[]),
+      patients:clone(source.patients||[]),
+      shifts:clone(source.shifts||[]),
+      availability:clone(source.availability||{})
+    };
+  }
+
+  function auditChanges(before,after){
+    const changes=[],collections=[
+      {key:'nurses',label:'Profissional',name:item=>item.name||'Profissional'},
+      {key:'patients',label:'Paciente',name:item=>item.name||'Paciente'},
+      {key:'shifts',label:'Plantão',name:item=>item.code||item.name||item.hospital||'Plantão'}
+    ];
+    for(const collection of collections){
+      const oldItems=new Map((before[collection.key]||[]).map(item=>[item.id,item])),newItems=new Map((after[collection.key]||[]).map(item=>[item.id,item]));
+      for(const [itemId,item] of newItems){
+        const previous=oldItems.get(itemId),target=collection.name(item);
+        if(!previous){changes.push({action:'Adição',entity:collection.label,target,details:'Novo registro'});continue}
+        const keys=[...new Set([...Object.keys(previous),...Object.keys(item)])].filter(key=>key!=='id'&&JSON.stringify(previous[key])!==JSON.stringify(item[key]));
+        if(keys.length){
+          const labels={name:'nome',cpf:'CPF',age:'idade',birthDate:'data de nascimento',babyName:'nome do bebê',gestationalAge:'idade gestacional na contratação',contractDate:'data da contratação',dumDate:'DUM',firstUltrasoundDate:'data do ultrassom',firstUltrasoundGA:'IG do ultrassom',dueDate:'DPP',prenatalConsultDate:'consulta pré-natal',prenatalConsultText:'observações do pré-natal',postpartumConsultDate:'consulta pós-parto',postpartumConsultText:'observações do pós-parto',risk:'risco',bloodGroup:'grupo sanguíneo',comorbidities:'comorbidades',allergies:'alergias',priorSurgeries:'cirurgias prévias',maternity:'maternidade',maternityBackup:'maternidade plano B',healthPlan:'plano de saúde',address:'endereço',prenatalDoctor:'médico pré-natalista',photographer:'fotógrafa(o)',doula:'doula',companionRelation:'parentesco do acompanhante',companionName:'nome do acompanhante',companionPhone:'telefone do acompanhante',paymentMethod:'forma de pagamento',phone:'telefone',email:'e-mail',instagram:'Instagram',nursePrimary:'enfermeiro referência',nurseBackup:'enfermeiro backup',shiftIds:'plantões vinculados',notes:'observações',date:'data',start:'início',end:'término',hospital:'hospital',vacancies:'vagas',code:'código',reg:'registro',role:'função',type:'vínculo'};
+          changes.push({action:'Edição',entity:collection.label,target,details:`Campos alterados: ${keys.map(key=>labels[key]||key).join(', ')}`});
+        }
+      }
+      for(const [itemId,item] of oldItems)if(!newItems.has(itemId))changes.push({action:'Exclusão',entity:collection.label,target:collection.name(item),details:'Registro excluído'});
+    }
+    const oldAvailability=before.availability||{},newAvailability=after.availability||{};
+    for(const key of new Set([...Object.keys(oldAvailability),...Object.keys(newAvailability)])){
+      if(oldAvailability[key]===newAvailability[key])continue;
+      const [nurseId,shiftId]=key.split(':'),nurse=(db.nurses||[]).find(item=>item.id===nurseId),shift=(db.shifts||[]).find(item=>item.id===shiftId);
+      const action=oldAvailability[key]===undefined?'Adição':newAvailability[key]===undefined?'Exclusão':'Edição';
+      changes.push({action,entity:'Disponibilidade',target:`${nurse?.name||'Profissional'} · ${shift?.code||'Plantão'}`,details:newAvailability[key]==='yes'?'Disponível':newAvailability[key]==='no'?'Indisponível':'Resposta atualizada'});
+    }
+    return changes;
+  }
+
+  function recordAuditChanges(){
+    const current=getAuditSnapshot();
+    if(!auditSnapshot){auditSnapshot=current;return}
+    const changes=auditChanges(auditSnapshot,current),actor=cloudUser?.email||cloudUser?.uid||'Usuário autenticado';
+    if(changes.length){
+      const timestamp=new Date().toISOString();
+      db.editHistory=[...(db.editHistory||[]),...changes.map(change=>({id:id(),timestamp,actor,...change}))].slice(-300);
+    }
+    auditSnapshot=current;
+  }
+
   function save(){
     if(!cloudUser||!cloudDataReady||!window.firebaseCloudDb){
       updateSaveBadge('Aguardando conexão com Firebase','gold');
       return;
     }
-    const serialized=JSON.stringify(db);
+    recordAuditChanges();
     if(cloudUser&&cloudDataReady&&window.firebaseCloudDb){
       clearTimeout(cloudSaveTimer);
       updateSaveBadge('Sincronizando com Firebase…','gold');
@@ -639,7 +692,7 @@ if('serviceWorker' in navigator){
     if(p==='calendario') focusCalendarMonth();
     page=p;
     document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===p));
-    $('#crumb').textContent={equipe:'Enfermeiros',plantao:'Plantões',pacientes:'Pacientes',disponibilidade:'Disponibilidade',calendario:'Calendário',manual:'Inserir/Importar dados',dados:'Importar e Exportar Dados'}[p];
+    $('#crumb').textContent={equipe:'Enfermeiros',plantao:'Plantões',pacientes:'Pacientes',disponibilidade:'Disponibilidade',calendario:'Calendário',manual:'Inserir/Importar dados',dados:'Importar e Exportar Dados',historico:'Histórico de edições'}[p];
     render();
   }
 
@@ -654,6 +707,7 @@ if('serviceWorker' in navigator){
     if(page==='manual') renderManual();
     if(page==='calendario') renderCalendar();
     if(page==='dados') renderDataTransfer();
+    if(page==='historico') renderEditHistory();
     setTimeout(()=>app.updateLinkUI(), 10);
   }
 
@@ -829,18 +883,18 @@ if('serviceWorker' in navigator){
         hospital=[...new Set((db.shifts||[]).map(s=>s.hospital||s.unit).filter(Boolean))][0]||'hospital';
     $('#view').innerHTML=header('Inserir/Importar dados','Cole diretamente as linhas da sua planilha ou preencha a tabela.',`<button class="button" onclick="app.addManualRow()">＋ Adicionar linha</button>`)+`
     <div class="card">
-      <div class="card-head"><h2>Dados da paciente</h2><small>Cadastro em lote a partir de planilha</small></div>
+      <div class="card-head"><h2>Dados da paciente</h2></div>
       <div class="paste-panel">
-        <label for="patient-paste"><strong>Cole aqui as informações dos pacientes</strong><span>Use colunas separadas por TAB e inclua os nomes dos campos na primeira linha.</span></label>
+        <label for="patient-paste"><strong>Cole aqui as informações dos pacientes</strong></label>
         <textarea id="patient-paste" rows="5" placeholder="Nome do paciente[TAB]CPF[TAB]Idade[TAB]Telefone[TAB]E-mail[TAB]Risco">${esc(db.patientPasteDraft||'')}</textarea>
         <button class="button primary" onclick="app.importPatientPaste()">Importar pacientes</button>
       </div>
     </div>
     <div class="card">
-      <div class="card-head"><h2>Disponibilidade da equipe</h2><small>As respostas serão integradas à escala</small></div>
+      <div class="card-head"><h2>Disponibilidade da equipe</h2></div>
       <datalist id="nurse-options">${(db.nurses||[]).map(n=>`<option value="${esc(n.name||'')}"></option>`).join('')}</datalist>
       <div class="paste-panel">
-        <label for="manual-paste"><strong>Cole aqui as três colunas copiadas da planilha</strong><span>Inclua o cabeçalho se quiser; ele será ignorado na importação.</span></label>
+        <label for="manual-paste"><strong>Cole aqui as três colunas copiadas da planilha</strong></label>
         <textarea id="manual-paste" rows="5" placeholder="Nome do enfermeiro[TAB]Disponível?[TAB]Plantões disponíveis">${esc(db.manualPasteDraft||'')}</textarea>
         <button class="button primary" onclick="app.importManualPaste()">Importar linhas coladas</button>
       </div>
@@ -912,6 +966,16 @@ if('serviceWorker' in navigator){
         </section>
       </div>
       <section class="side-link-box form-access-box" id="sidebar-link-box" aria-label="Acesso Forms Disponibilidade"></section>`;
+  }
+
+  function renderEditHistory(){
+    const entries=[...(db.editHistory||[])].sort((a,b)=>String(b.timestamp||'').localeCompare(String(a.timestamp||'')));
+    const rows=entries.map(entry=>{
+      const date=new Date(entry.timestamp),when=Number.isNaN(date.getTime())?'—':date.toLocaleString('pt-BR');
+      return `<tr><td>${esc(when)}</td><td>${esc(entry.actor||'Usuário autenticado')}</td><td>${esc(entry.action||'Edição')}</td><td>${esc(entry.entity||'Dados')} · ${esc(entry.target||'')}</td><td>${esc(entry.details||'')}</td></tr>`;
+    }).join('');
+    $('#view').innerHTML=header('Histórico de edições','Registro de inclusões, alterações e exclusões feitas nas informações.')+
+      `<div class="card"><div class="table-wrap"><table><thead><tr><th>Data e hora</th><th>Usuário</th><th>Ação</th><th>Registro</th><th>Detalhes</th></tr></thead><tbody>${rows||'<tr><td colspan="5" class="muted" style="text-align:center;padding:28px">Nenhuma edição registrada.</td></tr>'}</tbody></table></div></div>`;
   }
 
   function calendarCells(){
@@ -1203,7 +1267,7 @@ if('serviceWorker' in navigator){
       let box=document.querySelector('#manual-paste'),text=box?.value||'';
       if(!text.trim()){ toast('Cole as três colunas no campo acima primeiro.'); return; }
       let lines=text.replace(/\r/g,'').split('\n').filter(x=>x.trim());
-      if(lines.length&&/nome do enfermeiro/i.test(lines[0])) lines.shift();
+      if(lines.length&&/enfermeir|^\s*nome\s*(?:\t|;|$)/i.test(lines[0])) lines.shift();
       let rows=lines.map(line=>{
         let c=line.split('\t');
         if(c.length<2&&line.includes(';')) c=line.split(';');
@@ -1230,22 +1294,35 @@ if('serviceWorker' in navigator){
         name:['nome','paciente','nome paciente','nome da paciente','nome completo','nome completo da paciente'],
         cpf:['cpf'],age:['idade'],birthDate:['data de nascimento','nascimento'],babyName:['nome do bebe','bebe'],
         gestationalAge:['idade gestacional','ig na contratacao','ig contratacao'],contractDate:['data da contratacao','contratacao'],
-        dumDate:['dum','data da ultima menstruacao'],firstUltrasoundDate:['data do primeiro ultrassom','data do 1o ultrassom','primeiro ultrassom'],
-        firstUltrasoundGA:['ig do ultrassom','ig do primeiro ultrassom','ig do 1o ultrassom'],dueDate:['dpp','data provavel do parto'],
+        dumDate:['dum','data da ultima menstruacao','data da ultima menstruacao dum'],firstUltrasoundDate:['data do primeiro ultrassom','data do 1o ultrassom','data do 1 ultrassom','primeiro ultrassom'],
+        firstUltrasoundCombined:['data do 1o ultrassom e ig do us','data do 1 ultrassom e ig do us','data do primeiro ultrassom e ig do us'],
+        firstUltrasoundGA:['ig do ultrassom','ig do primeiro ultrassom','ig do 1o ultrassom','idade gestacional no 1 ultrassom'],dueDate:['dpp','data provavel do parto'],
         prenatalConsultDate:['consulta de pre natal','data da consulta pre natal'],prenatalConsultText:['observacoes consulta pre natal','consulta pre natal observacoes'],
         postpartumConsultDate:['consulta de pos parto','data da consulta pos parto'],postpartumConsultText:['observacoes consulta pos parto','consulta pos parto observacoes'],
-        risk:['risco','classificacao de risco'],bloodGroup:['grupo sanguineo','tipo sanguineo'],comorbidities:['comorbidades'],allergies:['alergias'],
+        risk:['risco','classificacao de risco'],bloodGroup:['grupo sanguineo'],comorbidities:['comorbidades'],allergies:['alergias','alergia medicamentos ou alimentar'],
         priorSurgeries:['cirurgias previas','cirurgias'],maternity:['maternidade'],maternityBackup:['maternidade plano b','maternidade backup'],
-        healthPlan:['plano de saude','convenio'],address:['endereco'],prenatalDoctor:['medico pre natalista','medico prenatalista'],photographer:['fotografa','fotografo'],doula:['doula'],
-        companionRelation:['parentesco acompanhante','grau de parentesco acompanhante'],companionName:['nome do acompanhante','acompanhante'],companionPhone:['contato acompanhante','telefone acompanhante'],
-        paymentMethod:['forma de pagamento','pagamento'],phone:['telefone','celular','contato telefonico'],instagram:['instagram'],email:['email','e mail'],
+        healthPlan:['plano de saude','convenio'],address:['endereco'],prenatalDoctor:['medico pre natalista','medico prenatalista'],photographer:['fotografa','fotografo','fotografa o'],doula:['doula'],
+        companionRelation:['parentesco acompanhante','grau de parentesco acompanhante','acompanhante grau de parentesco'],companionName:['nome do acompanhante','nome completo do da acompanhante','acompanhante'],companionPhone:['contato acompanhante','telefone acompanhante','contato telefonico'],
+        paymentMethod:['forma de pagamento','pagamento'],phone:['telefone','celular'],instagram:['instagram'],email:['email','e mail'],
         nursePrimary:['enfermeiro referencia','enfermeira referencia','referencia'],nurseBackup:['enfermeiro backup','enfermeira backup','backup'],notes:['observacoes','outros','observacoes gerais']
       };
       const headerMap=new Map();
       Object.entries(aliases).forEach(([field,names])=>names.forEach(name=>headerMap.set(normalizeHeader(name),field)));
       const splitLine=line=>line.includes('\t')?line.split('\t'):line.split(';');
-      const headers=splitLine(lines[0]).map(value=>headerMap.get(normalizeHeader(value))||null);
-      if(!headers.includes('name')){toast('A primeira linha precisa ter uma coluna “Nome” ou “Nome do paciente”.');return}
+      let fullNameHeaders=0;
+      const detectedHeaders=splitLine(lines[0]).map(value=>{
+        const normalized=normalizeHeader(value);
+        if(normalized==='nome completo')return ++fullNameHeaders===1?'name':'companionName';
+        return headerMap.get(normalized)||null;
+      });
+      const hasHeader=detectedHeaders.includes('name')&&detectedHeaders.filter(Boolean).length>=2;
+      const dataLines=hasHeader?lines.slice(1):lines;
+      const fixedPatientColumns=['name','cpf','age','birthDate','babyName','dumDate','firstUltrasoundCombined','firstUltrasoundGA','dueDate','comorbidities','allergies','priorSurgeries','bloodGroup','healthPlan','maternity','maternityBackup','address','instagram','prenatalDoctor','photographer','doula','companionRelation','companionName','companionPhone'];
+      const firstDataCells=splitLine(dataLines[0]||'');
+      const timestampAtStart=/^(?:\d{1,2}\/\d{1,2}\/\d{4}\s+\d{1,2}:\d{2}|\d{4}-\d{2}-\d{2}T)/.test((firstDataCells[0]||'').trim());
+      const dataColumnCount=firstDataCells.length-(timestampAtStart?1:0);
+      const noHeaderColumns=dataColumnCount>=24?fixedPatientColumns:['name','cpf','age','birthDate','babyName','dumDate','firstUltrasoundCombined','dueDate','comorbidities','allergies','priorSurgeries','bloodGroup','healthPlan','maternity','maternityBackup','address','instagram','prenatalDoctor','photographer','doula','companionRelation','companionName','companionPhone'];
+      const headers=hasHeader?detectedHeaders:timestampAtStart?[null,...noHeaderColumns]:noHeaderColumns;
       const dateFields=new Set(['birthDate','contractDate','dumDate','firstUltrasoundDate','dueDate','prenatalConsultDate','postpartumConsultDate']);
       const parseDate=value=>{
         const v=String(value||'').trim();if(!v)return '';
@@ -1253,11 +1330,18 @@ if('serviceWorker' in navigator){
         const m=v.match(/^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4})$/);
         return m?`${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`:'';
       };
-      const patients=lines.slice(1).map(line=>{
+      const patients=dataLines.map(line=>{
         const cells=splitLine(line),patient={id:id(),shiftIds:[]};
         headers.forEach((field,index)=>{
           if(!field)return;
           let value=String(cells[index]||'').trim();if(!value)return;
+          if(field==='firstUltrasoundCombined'){
+            const dateMatch=value.match(/\d{1,2}[/.\-]\d{1,2}[/.\-]\d{4}|\d{4}-\d{2}-\d{2}/);
+            if(dateMatch){patient.firstUltrasoundDate=parseDate(dateMatch[0]);value=value.replace(dateMatch[0],'').replace(/^\s*(?:[-–,;:]|ig(?:\s+do\s+us)?\s*[:=-]?)*\s*/i,'').trim();}
+            else value=value.replace(/^\s*ig(?:\s+do\s+us)?\s*[:=-]?\s*/i,'').trim();
+            if(value)patient.firstUltrasoundGA=value;
+            return;
+          }
           if(dateFields.has(field))value=parseDate(value);
           if(field==='age')value=value.replace(/\D/g,'');
           if(field==='risk'){
@@ -1407,7 +1491,7 @@ if('serviceWorker' in navigator){
         <div style="font-size:13px;font-weight:700;border-bottom:1px solid var(--line);padding-bottom:6px">Gestação e parto</div>
         <div class="form-row"><div class="field"><label>Idade gestacional na contratação</label><input name="gestationalAge" maxlength="40" value="${esc(p.gestationalAge||'')}" placeholder="Ex.: 32 semanas"></div><div class="field"><label>Data da contratação</label><input name="contractDate" type="date" value="${esc(p.contractDate||'')}"></div></div>
         <div class="form-row"><div class="field"><label>Data da última menstruação (DUM)</label><input name="dumDate" type="date" value="${esc(p.dumDate||'')}"></div><div class="field"><label>Data do 1º ultrassom</label><input name="firstUltrasoundDate" type="date" value="${esc(p.firstUltrasoundDate||'')}"></div></div>
-        <div class="form-row"><div class="field"><label>IG do 1º ultrassom</label><input name="firstUltrasoundGA" maxlength="40" value="${esc(p.firstUltrasoundGA||'')}" placeholder="Ex.: 8 semanas e 2 dias"></div><div class="field"><label>Data provável do parto (DPP)</label><input name="dueDate" type="date" value="${esc(p.dueDate||'')}"></div></div>
+        <div class="form-row"><div class="field"><label>Idade gestacional no 1º ultrassom</label><input name="firstUltrasoundGA" maxlength="40" value="${esc(p.firstUltrasoundGA||'')}" placeholder="Ex.: 8 semanas e 2 dias"></div><div class="field"><label>Data provável do parto (DPP)</label><input name="dueDate" type="date" value="${esc(p.dueDate||'')}"></div></div>
         <div class="form-row"><div class="field"><label>Consulta de pré-natal</label><input name="prenatalConsultDate" type="date" value="${esc(p.prenatalConsultDate||'')}"><textarea name="prenatalConsultText" rows="2" placeholder="Consulta pré-natal" style="border:1px solid var(--line);border-radius:8px;padding:10px 11px;font:inherit">${esc(p.prenatalConsultText||'')}</textarea></div><div class="field"><label>Consulta de pós parto</label><input name="postpartumConsultDate" type="date" value="${esc(p.postpartumConsultDate||'')}"><textarea name="postpartumConsultText" rows="2" placeholder="Consulta pós parto" style="border:1px solid var(--line);border-radius:8px;padding:10px 11px;font:inherit">${esc(p.postpartumConsultText||'')}</textarea></div></div>
         <div class="form-row"><div class="field"><label>Classificação de risco *</label><select name="risk" required><option value="">Selecione</option><option value="high" ${p.risk==='high'?'selected':''}>Alto risco</option><option value="low" ${p.risk==='low'?'selected':''}>Baixo risco</option></select></div><div class="field"><label>Grupo sanguíneo</label><select name="bloodGroup"><option value="">Selecione</option>${['A+','A−','B+','B−','AB+','AB−','O+','O−','Outro','Não informado'].map(v=>`<option value="${v}" ${p.bloodGroup===v?'selected':''}>${v}</option>`).join('')}</select></div></div>
         <div style="font-size:13px;font-weight:700;border-bottom:1px solid var(--line);padding-bottom:6px">Saúde e maternidade</div>
@@ -1694,7 +1778,7 @@ if('serviceWorker' in navigator){
             s.hospital=s.hospital||s.unit||'';
             s.vacancies=Number(s.vacancies||2);
           });
-          db={nurses:x.nurses,shifts:x.shifts,availability:x.availability,rosters:x.rosters,manualEntries:x.manualEntries||[],patients:Array.isArray(x.patients)?x.patients:[]};
+          db={nurses:x.nurses,shifts:x.shifts,availability:x.availability,rosters:x.rosters,manualEntries:x.manualEntries||[],patients:Array.isArray(x.patients)?x.patients:[],editHistory:Array.isArray(x.editHistory)?x.editHistory:(db.editHistory||[])};
           save();
           render();
           toast('Dados importados com sucesso');
@@ -1746,6 +1830,7 @@ if('serviceWorker' in navigator){
         rosters:{},
         manualEntries:[],
         patients:[],
+        editHistory:db.editHistory||[],
         externalLink:db.externalLink||DEFAULT_LINK,
         adminPassword:db.adminPassword||'admin123'
       };
@@ -1791,6 +1876,7 @@ if('serviceWorker' in navigator){
           const payload=JSON.stringify(db);
           await docRef.set({payload,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
         }
+        auditSnapshot=getAuditSnapshot();
         cloudDataReady=true;
         document.body.classList.add('authenticated');
         updateSaveBadge('Conectado ao Firebase','teal');
