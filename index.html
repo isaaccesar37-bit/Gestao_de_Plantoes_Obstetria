@@ -574,6 +574,17 @@ if('serviceWorker' in navigator){
     };
   }
 
+  function auditComparable(value){
+    if(value===undefined||value===null)return '';
+    if(Array.isArray(value))return value.map(auditComparable).sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b)));
+    if(typeof value==='object')return Object.fromEntries(Object.keys(value).sort().map(key=>[key,auditComparable(value[key])]));
+    return String(value).trim();
+  }
+
+  function auditValueChanged(previous,current){
+    return JSON.stringify(auditComparable(previous))!==JSON.stringify(auditComparable(current));
+  }
+
   function auditChanges(before,after){
     const changes=[],collections=[
       {key:'nurses',label:'Profissional',name:item=>item.name||'Profissional'},
@@ -585,7 +596,7 @@ if('serviceWorker' in navigator){
       for(const [itemId,item] of newItems){
         const previous=oldItems.get(itemId),target=collection.name(item);
         if(!previous){changes.push({action:'Adição',entity:collection.label,target,details:'Novo registro'});continue}
-        const keys=[...new Set([...Object.keys(previous),...Object.keys(item)])].filter(key=>key!=='id'&&JSON.stringify(previous[key])!==JSON.stringify(item[key]));
+        const keys=[...new Set([...Object.keys(previous),...Object.keys(item)])].filter(key=>key!=='id'&&auditValueChanged(previous[key],item[key]));
         if(keys.length){
           const labels={name:'nome',cpf:'CPF',age:'idade',birthDate:'data de nascimento',babyName:'nome do bebê',gestationalAge:'idade gestacional na contratação',contractDate:'data da contratação',dumDate:'DUM',firstUltrasoundDate:'data do ultrassom',firstUltrasoundGA:'IG do ultrassom',dueDate:'DPP',prenatalConsultDate:'consulta pré-natal',prenatalConsultText:'observações do pré-natal',postpartumConsultDate:'consulta pós-parto',postpartumConsultText:'observações do pós-parto',risk:'risco',bloodGroup:'grupo sanguíneo',comorbidities:'comorbidades',allergies:'alergias',priorSurgeries:'cirurgias prévias',maternity:'maternidade',maternityBackup:'maternidade plano B',healthPlan:'plano de saúde',address:'endereço',prenatalDoctor:'médico pré-natalista',photographer:'fotógrafa(o)',doula:'doula',companionRelation:'parentesco do acompanhante',companionName:'nome do acompanhante',companionPhone:'telefone do acompanhante',paymentMethod:'forma de pagamento',phone:'telefone',email:'e-mail',instagram:'Instagram',nursePrimary:'enfermeiro referência',nurseBackup:'enfermeiro backup',shiftIds:'plantões vinculados',notes:'observações',date:'data',start:'início',end:'término',hospital:'hospital',vacancies:'vagas',code:'código',reg:'registro',role:'função',type:'vínculo'};
           changes.push({action:'Edição',entity:collection.label,target,details:`Campos alterados: ${keys.map(key=>labels[key]||key).join(', ')}`});
@@ -595,7 +606,7 @@ if('serviceWorker' in navigator){
     }
     const oldAvailability=before.availability||{},newAvailability=after.availability||{};
     for(const key of new Set([...Object.keys(oldAvailability),...Object.keys(newAvailability)])){
-      if(oldAvailability[key]===newAvailability[key])continue;
+      if(!auditValueChanged(oldAvailability[key],newAvailability[key]))continue;
       const [nurseId,shiftId]=key.split(':'),nurse=(db.nurses||[]).find(item=>item.id===nurseId),shift=(db.shifts||[]).find(item=>item.id===shiftId);
       const action=oldAvailability[key]===undefined?'Adição':newAvailability[key]===undefined?'Exclusão':'Edição';
       changes.push({action,entity:'Disponibilidade',target:`${nurse?.name||'Profissional'} · ${shift?.code||'Plantão'}`,details:newAvailability[key]==='yes'?'Disponível':newAvailability[key]==='no'?'Indisponível':'Resposta atualizada'});
