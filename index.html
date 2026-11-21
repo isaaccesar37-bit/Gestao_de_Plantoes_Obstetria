@@ -540,7 +540,11 @@ if('serviceWorker' in navigator){
       monthlyHospital='',
       monthlyVacancies=2,
       patientSheetTitleBefore=null,
-      auditSnapshot=null;
+      auditSnapshot=null,
+      lastCloudDb=null,
+      lastCloudPayload=null,
+      cloudUnsubscribe=null,
+      remoteRefreshPending=false;
 
   const $=s=>document.querySelector(s),
         esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -584,6 +588,51 @@ if('serviceWorker' in navigator){
   function auditValueChanged(previous,current){
     return JSON.stringify(auditComparable(previous))!==JSON.stringify(auditComparable(current));
   }
+
+  function cloneState(value){return value===undefined?undefined:JSON.parse(JSON.stringify(value))}
+  function sameState(previous,current){return JSON.stringify(previous)===JSON.stringify(current)}
+
+  function mergeCloudValue(base,local,remote,path=''){
+    if(sameState(local,base))return cloneState(remote);
+    if(sameState(remote,base))return cloneState(local);
+    if(path==='editHistory'){
+      const entries=new Map();
+      [...(Array.isArray(remote)?remote:[]),...(Array.isArray(local)?local:[])].forEach(entry=>entries.set(entry.id||JSON.stringify(entry),entry));
+      return [...entries.values()].sort((a,b)=>String(a.timestamp||'').localeCompare(String(b.timestamp||''))).slice(-300);
+    }
+    if(Array.isArray(base)&&Array.isArray(local)&&Array.isArray(remote)&&[...base,...local,...remote].every(item=>item&&typeof item==='object'&&!Array.isArray(item)&&item.id)){
+      const baseMap=new Map(base.map(item=>[item.id,item])),localMap=new Map(local.map(item=>[item.id,item])),remoteMap=new Map(remote.map(item=>[item.id,item]));
+      const ids=[...new Set([...remoteMap.keys(),...localMap.keys()])],merged=[];
+      for(const itemId of ids){
+        const before=baseMap.get(itemId),mine=localMap.get(itemId),theirs=remoteMap.get(itemId);
+        if(!before){merged.push(mine&&theirs?mergeCloudValue(undefined,mine,theirs,`${path}[]`):cloneState(mine||theirs));continue}
+        if(!mine){if(theirs&&!sameState(theirs,before))continue;else continue}
+        if(!theirs){if(!sameState(mine,before))merged.push(cloneState(mine));continue}
+        merged.push(mergeCloudValue(before,mine,theirs,`${path}[]`));
+      }
+      return merged;
+    }
+    const isObject=value=>value&&typeof value==='object'&&!Array.isArray(value);
+    if(isObject(base)&&isObject(local)&&isObject(remote)){
+      const merged={};
+      for(const key of new Set([...Object.keys(base),...Object.keys(local),...Object.keys(remote)])){
+        const value=mergeCloudValue(base[key],local[key],remote[key],path?`${path}.${key}`:key);
+        if(value!==undefined)merged[key]=value;
+      }
+      return merged;
+    }
+    return cloneState(local);
+  }
+
+  function refreshRemoteViewIfSafe(){
+    if(!remoteRefreshPending||$('#modal-root .modal'))return;
+    const focused=document.activeElement;
+    if(focused?.matches?.('input,textarea,select,[contenteditable="true"]'))return;
+    remoteRefreshPending=false;
+    render();
+  }
+
+  document.addEventListener('focusout',()=>setTimeout(refreshRemoteViewIfSafe,0));
 
   function auditChanges(before,after){
     const changes=[],collections=[
@@ -636,10 +685,26 @@ if('serviceWorker' in navigator){
       updateSaveBadge('Sincronizando com Firebase…','gold');
       cloudSaveTimer=setTimeout(async()=>{
         try{
-          const payload=JSON.stringify(db);
-          if(new Blob([payload]).size>900000)throw new Error('O conjunto de dados ultrapassou o limite seguro para sincronização.');
-          await window.firebaseCloudDb.collection('appData').doc('escalaClara').set({payload,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+          const localData=cloneState(db),baseData=cloneState(lastCloudDb),docRef=window.firebaseCloudDb.collection('appData').doc('escalaClara');
+          let committedDb=null;
+          await window.firebaseCloudDb.runTransaction(async transaction=>{
+            const remoteSnapshot=await transaction.get(docRef),remoteDb=remoteSnapshot.exists&&typeof remoteSnapshot.data().payload==='string'?normalizeDb(JSON.parse(remoteSnapshot.data().payload)):normalizeDb({});
+            committedDb=normalizeDb(mergeCloudValue(baseData||remoteDb,localData,remoteDb));
+            const payload=JSON.stringify(committedDb);
+            if(new Blob([payload]).size>900000)throw new Error('O conjunto de dados ultrapassou o limite seguro para sincronização.');
+            transaction.set(docRef,{payload,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+          });
+          const latestLocal=cloneState(db),finalDb=normalizeDb(mergeCloudValue(localData,latestLocal,committedDb)),needsUpload=!sameState(finalDb,committedDb),viewChanged=!sameState(db,finalDb);
+          db=finalDb;
+          lastCloudPayload=JSON.stringify(committedDb);
+          lastCloudDb=cloneState(committedDb);
+          auditSnapshot=getAuditSnapshot();
           updateSaveBadge('Salvo no Firebase','teal');
+          if(viewChanged){
+            if($('#modal-root .modal')||document.activeElement?.matches?.('input,textarea,select,[contenteditable="true"]'))remoteRefreshPending=true;
+            else render();
+          }
+          if(needsUpload)save();
         }catch(error){
           console.error('Falha ao sincronizar com o Firestore.',error);
           updateSaveBadge('Falha ao salvar no Firebase','red');
@@ -1766,6 +1831,7 @@ if('serviceWorker' in navigator){
     closeModal(){
       $('#modal-root').innerHTML='';
       if(patientSheetTitleBefore!==null){document.title=patientSheetTitleBefore;patientSheetTitleBefore=null}
+      refreshRemoteViewIfSafe();
     },
 
     exportData(){
@@ -1877,21 +1943,45 @@ if('serviceWorker' in navigator){
     window.firebaseAuth.onAuthStateChanged(async user=>{
       cloudUser=user||null;
       cloudDataReady=false;
-      if(!user){document.body.classList.remove('authenticated');return}
+      if(!user){cloudUnsubscribe?.();cloudUnsubscribe=null;lastCloudDb=null;lastCloudPayload=null;document.body.classList.remove('authenticated');return}
       const docRef=window.firebaseCloudDb.collection('appData').doc('escalaClara');
       try{
         const snapshot=await docRef.get();
         if(snapshot.exists&&typeof snapshot.data().payload==='string'){
-          db=normalizeDb(JSON.parse(snapshot.data().payload));
+          lastCloudPayload=snapshot.data().payload;
+          db=normalizeDb(JSON.parse(lastCloudPayload));
         }else if(!snapshot.exists){
           const payload=JSON.stringify(db);
           await docRef.set({payload,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+          lastCloudPayload=payload;
         }
+        lastCloudDb=cloneState(db);
         auditSnapshot=getAuditSnapshot();
         cloudDataReady=true;
         document.body.classList.add('authenticated');
         updateSaveBadge('Conectado ao Firebase','teal');
         render();
+        cloudUnsubscribe?.();
+        cloudUnsubscribe=docRef.onSnapshot(remoteSnapshot=>{
+          if(!remoteSnapshot.exists||remoteSnapshot.metadata?.hasPendingWrites)return;
+          const payload=remoteSnapshot.data()?.payload;
+          if(typeof payload!=='string'||payload===lastCloudPayload)return;
+          try{
+            const remoteDb=normalizeDb(JSON.parse(payload)),base=lastCloudDb||remoteDb,
+              localHasChanges=!sameState(db,base),mergedDb=localHasChanges?normalizeDb(mergeCloudValue(base,db,remoteDb)):remoteDb;
+            db=mergedDb;
+            lastCloudPayload=payload;
+            lastCloudDb=cloneState(remoteDb);
+            auditSnapshot=getAuditSnapshot();
+            updateSaveBadge(localHasChanges?'Sincronizando alterações locais…':'Atualizado em tempo real',localHasChanges?'gold':'teal');
+            if(!sameState(mergedDb,remoteDb))save();
+            if($('#modal-root .modal')||document.activeElement?.matches?.('input,textarea,select,[contenteditable="true"]'))remoteRefreshPending=true;
+            else render();
+          }catch(error){console.error('Não foi possível aplicar a atualização recebida do Firebase.',error)}
+        },error=>{
+          console.error('A sincronização em tempo real foi interrompida.',error);
+          updateSaveBadge('Sincronização em tempo real indisponível','red');
+        });
       }catch(error){
         console.error('Não foi possível carregar os dados do Firestore.',error);
         cloudUser=null;
